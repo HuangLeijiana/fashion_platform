@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}隐私设置 - 云想衣裳{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-eye me-2"></i>隐私设置</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="#">
+                        <div class="mb-4">
+                            <h6 class="mb-3">隐私偏好</h6>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="profileVisibility" checked>
+                                <label class="form-check-label" for="profileVisibility">公开个人资料</label>
+                                <div class="form-text">其他用户可以看到您的穿搭风格和喜好</div>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="dataCollection" checked>
+                                <label class="form-check-label" for="dataCollection">允许数据收集</label>
+                                <div class="form-text">帮助我们改进推荐算法和用户体验</div>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="personalizedAds">
+                                <label class="form-check-label" for="personalizedAds">个性化广告</label>
+                                <div class="form-text">根据您的兴趣显示相关广告内容</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="mb-3">数据管理</h6>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-secondary text-start">
+                                    <i class="fas fa-download me-2"></i>导出个人数据
+                                </button>
+                                <button type="button" class="btn btn-outline-danger text-start">
+                                    <i class="fas fa-trash me-2"></i>删除账户数据
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.account_settings') }}" class="btn btn-secondary me-md-2">返回</a>
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,997 @@
+{% extends "base.html" %}
+
+{% block title %}我的衣柜 - 云想衣裳
+<!-- 批量导入模态框 -->
+<div class="modal fade" id="batchImportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量导入本地图库</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="batchImportForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">选择图片文件夹或多张图片</label>
+                        <input type="file" class="form-control" name="images" multiple accept="image/*" webkitdirectory>
+                        <div class="form-text">支持多选图片或选择整个文件夹</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">默认分类</label>
+                        <select class="form-select" name="category">
+                            <option value="未分类">未分类</option>
+                            <option value="上衣">上衣</option>
+                            <option value="下装">下装</option>
+                            <option value="鞋履">鞋履</option>
+                            <option value="配饰">配饰</option>
+                        </select>
+                    </div>
+                </form>
+                <div id="uploadProgress" class="progress mt-3" style="display:none;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">处理中...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="batchImportImages()">开始导入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function batchImportImages() {
+    const form = document.getElementById('batchImportForm');
+    const formData = new FormData(form);
+    const files = form.querySelector('input[type="file"]').files;
+    
+    if (files.length === 0) {
+        showAlert('请选择文件', 'warning');
+        return;
+    }
+
+    document.getElementById('uploadProgress').style.display = 'flex';
+    const btn = document.querySelector('#batchImportModal .btn-primary');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '导入中...';
+
+    fetch('/wardrobe/batch_add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = originalText;
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('batchImportModal')).hide();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(err => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = originalText;
+        showAlert('导入失败: ' + err.message, 'danger');
+    });
+}
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 pt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>我的衣柜-云想衣裳</h1>
+                
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#batchImportModal">
+                    <i class="fas fa-images me-2"></i>批量导入
+                </button>
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <i class="fas fa-plus me-2"></i>添加服装
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 优化后的筛选工具栏 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-toolbar">
+                <!-- 分类筛选（中文） -->
+                <div class="btn-group me-3">
+                    <button class="btn btn-outline-primary active" data-filter="全部">全部</button>
+                    <button class="btn btn-outline-primary" data-filter="上衣">上衣</button>
+                    <button class="btn btn-outline-primary" data-filter="下装">下装</button>
+                    <button class="btn btn-outline-primary" data-filter="鞋履">鞋履</button>
+                    <button class="btn btn-outline-primary" data-filter="配饰">配饰</button>
+                </div>
+
+                <!-- 搜索框组 -->
+                <div class="search-group">
+                    <div class="input-group search-box">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 search-input"
+                               placeholder="搜索服装名称或品牌..." id="searchInput">
+                        <button class="btn btn-primary" type="button" id="searchBtn">
+                            <i class="fas fa-search me-1"></i>搜索
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 高级搜索按钮 -->
+                <button class="btn btn-outline-secondary" id="advancedSearchBtn">
+                    <i class="fas fa-sliders-h me-1"></i>高级搜索
+                </button>
+            </div>
+
+            <!-- 高级搜索面板 -->
+            <div class="advanced-search-panel mt-3" id="advancedSearchPanel" style="display: none;">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="fas fa-filter me-2"></i>高级筛选</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="colorFilter" class="form-label small fw-bold">颜色</label>
+                                <input type="text" class="form-control form-control-sm" id="colorFilter" placeholder="输入颜色...">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="brandFilter" class="form-label small fw-bold">品牌</label>
+                                <input type="text" class="form-control form-control-sm" id="brandFilter" placeholder="输入品牌...">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="seasonFilter" class="form-label small fw-bold">季节</label>
+                                <select class="form-select form-select-sm" id="seasonFilter">
+                                    <option value="">所有季节</option>
+                                    <option value="spring">春季</option>
+                                    <option value="summer">夏季</option>
+                                    <option value="autumn">秋季</option>
+                                    <option value="winter">冬季</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-primary btn-sm me-2" id="applyAdvancedSearch">
+                                    <i class="fas fa-check me-1"></i>应用
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" id="resetAdvancedSearch">
+                                    <i class="fas fa-redo me-1"></i>重置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 服装网格 -->
+    <div class="row" id="clothingGrid">
+        {% if clothing_items %}
+            {% for item in clothing_items %}
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4 clothing-item" data-category="{{ item.category }}" data-item-id="{{ item.id }}">
+                <div class="card clothing-card">
+                    <img src="{{ url_for('static', filename=item.image_path) if item.image_path else url_for('static', filename='images/placeholder.jpg') }}"
+                         class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">{{ item.category }} • {{ item.color or '未设置颜色' }}</small>
+                            {% if item.style_tags %}
+                            <br><small class="text-info fw-bold"><i class="fas fa-tags me-1"></i>{{ item.style_tags.split(',')[0] }}</small>
+                            {% endif %}
+                            {% if item.brand %}
+                            <br><small class="text-muted">品牌: {{ item.brand }}</small>
+                            {% endif %}
+                            {% if item.season %}
+                            <br><small class="text-muted">季节:
+                                {% if item.season == 'spring' %}春季
+                                {% elif item.season == 'summer' %}夏季
+                                {% elif item.season == 'autumn' %}秋季
+                                {% elif item.season == 'winter' %}冬季
+                                {% else %}{{ item.season }}{% endif %}
+                            </small>
+                            {% endif %}
+                        </p>
+                        <div class="clothing-actions">
+                            <button class="btn btn-sm btn-outline-primary edit-btn" data-item-id="{{ item.id }}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-btn"
+                                    data-item-id="{{ item.id }}"
+                                    data-item-name="{{ item.name }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-archive fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">衣柜空空如也</h4>
+                <p class="text-muted">添加你的第一件服装开始管理吧！</p>
+                
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#batchImportModal">
+                    <i class="fas fa-images me-2"></i>批量导入
+                </button>
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <i class="fas fa-plus me-2"></i>添加服装
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 添加服装模态框 -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加新服装</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addItemForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="itemName" class="form-label">服装名称 *</label>
+                                <input type="text" class="form-control" id="itemName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="itemCategory" class="form-label">分类 *</label>
+                                <select class="form-select" id="itemCategory" name="category" required>
+                                    <option value="">选择分类</option>
+                                    <!-- 将 value 改为中文，后端使用中文分类 -->
+                                    <option value="上衣">上衣</option>
+                                    <option value="下装">下装</option>
+                                    <option value="鞋履">鞋履</option>
+                                    <option value="配饰">配饰</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="itemColor" class="form-label">颜色</label>
+                                <input type="text" class="form-control" id="itemColor" name="color">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="itemBrand" class="form-label">品牌</label>
+                                <input type="text" class="form-control" id="itemBrand" name="brand">
+                            </div>
+                            <div class="mb-3">
+                                <label for="itemSeason" class="form-label">季节</label>
+                                <select class="form-select" id="itemSeason" name="season">
+                                    <option value="">选择季节</option>
+                                    <option value="spring">春季</option>
+                                    <option value="summer">夏季</option>
+                                    <option value="autumn">秋季</option>
+                                    <option value="winter">冬季</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="itemImage" class="form-label">上传图片</label>
+                                <input type="file" class="form-control" id="itemImage" name="image" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="addItemBtn" onclick="addClothingItem()">
+                    <i class="fas fa-plus me-2"></i>添加
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑服装模态框 -->
+<div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑服装</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editItemForm" enctype="multipart/form-data">
+                    <input type="hidden" id="editItemId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editItemName" class="form-label">服装名称 *</label>
+                                <input type="text" class="form-control" id="editItemName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editItemCategory" class="form-label">分类 *</label>
+                                <select class="form-select" id="editItemCategory" name="category" required>
+                                    <option value="">选择分类</option>
+                                    <!-- 编辑也使用中文值，方便后端回填匹配 -->
+                                    <option value="上衣">上衣</option>
+                                    <option value="下装">下装</option>
+                                    <option value="鞋履">鞋履</option>
+                                    <option value="配饰">配饰</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editItemColor" class="form-label">颜色</label>
+                                <input type="text" class="form-control" id="editItemColor" name="color">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editItemBrand" class="form-label">品牌</label>
+                                <input type="text" class="form-control" id="editItemBrand" name="brand">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editItemSeason" class="form-label">季节</label>
+                                <select class="form-select" id="editItemSeason" name="season">
+                                    <option value="">选择季节</option>
+                                    <option value="spring">春季</option>
+                                    <option value="summer">夏季</option>
+                                    <option value="autumn">秋季</option>
+                                    <option value="winter">冬季</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editItemImage" class="form-label">上传图片</label>
+                                <input type="file" class="form-control" id="editItemImage" name="image" accept="image/*">
+                                <div class="form-text">当前图片预览：</div>
+                                <img id="editItemImagePreview" src="" class="img-thumbnail mt-2" style="max-height: 100px; display: none;">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="updateItemBtn" onclick="updateClothingItem()">
+                    <i class="fas fa-save me-2"></i>更新
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 消息提示容器 -->
+<div id="alertContainer" class="position-fixed top-0 start-50 translate-middle-x mt-5" style="z-index: 9999;"></div>
+
+<!-- 加载提示 -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="loadingToast" class="toast align-items-center text-white bg-primary border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-spinner fa-spin me-2"></i>处理中...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ---------- 添加服装 ----------
+function addClothingItem() {
+    console.log('🎯 添加函数被调用');
+
+    const name = document.getElementById('itemName').value;
+    const category = document.getElementById('itemCategory').value;
+
+    if (!name || !name.trim()) {
+        showAlert('请输入服装名称', 'warning');
+        return false;
+    }
+    if (!category) {
+        showAlert('请选择服装分类', 'warning');
+        return false;
+    }
+
+    const addButton = document.getElementById('addItemBtn');
+    const originalText = addButton.innerHTML;
+    addButton.disabled = true;
+    addButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>添加中...';
+
+    const form = document.getElementById('addItemForm');
+    const formData = new FormData(form);
+
+    fetch('/wardrobe/add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        addButton.disabled = false;
+        addButton.innerHTML = originalText;
+        if (data.success) {
+            showAlert('添加成功！', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addItemModal'));
+            if (modal) modal.hide();
+            form.reset();
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showAlert('添加失败: ' + (data.message || '未知错误'), 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('添加错误:', err);
+        addButton.disabled = false;
+        addButton.innerHTML = originalText;
+        showAlert('网络错误: ' + err.message, 'danger');
+    });
+
+    return false;
+}
+
+// ---------- 删除服装 ----------
+function deleteClothingItem(itemId, itemName) {
+    if (!confirm(`确定要删除 "${itemName}" 吗？此操作不可撤销。`)) return;
+
+    const deleteBtn = document.querySelector(`.delete-btn[data-item-id="${itemId}"]`);
+    let originalHtml = null;
+    if (deleteBtn) {
+        originalHtml = deleteBtn.innerHTML;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        deleteBtn.disabled = true;
+    }
+
+    // 直接以 POST 形式调用后端删除（不要发送空 JSON）
+    fetch(`/wardrobe/delete/${itemId}`, { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const itemElement = document.querySelector(`.clothing-item[data-item-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.style.transition = 'all 0.3s ease';
+                itemElement.style.opacity = '0';
+                itemElement.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    itemElement.remove();
+                    showAlert('删除成功！', 'success');
+                    const remainingItems = document.querySelectorAll('.clothing-item');
+                    if (remainingItems.length === 0) showEmptyState();
+                }, 300);
+            } else {
+                showAlert('删除成功，刷新中...', 'success');
+                setTimeout(() => window.location.reload(), 600);
+            }
+        } else {
+            showAlert(data.message || '删除失败', 'danger');
+            if (deleteBtn) {
+                deleteBtn.innerHTML = originalHtml;
+                deleteBtn.disabled = false;
+            }
+        }
+    })
+    .catch(err => {
+        console.error('删除错误:', err);
+        showAlert('网络错误，请重试', 'danger');
+        if (deleteBtn) {
+            deleteBtn.innerHTML = originalHtml;
+            deleteBtn.disabled = false;
+        }
+    });
+}
+
+// ---------- 显示空状态 ----------
+function showEmptyState() {
+    const clothingGrid = document.getElementById('clothingGrid');
+    clothingGrid.innerHTML = `
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-archive fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">衣柜空空如也</h4>
+            <p class="text-muted">添加你的第一件服装开始管理吧！</p>
+            
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#batchImportModal">
+                    <i class="fas fa-images me-2"></i>批量导入
+                </button>
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                <i class="fas fa-plus me-2"></i>添加服装
+            </button>
+        </div>
+    `;
+}
+
+// ---------- 提示消息 ----------
+function showAlert(message, type='info') {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertId = 'alert-' + Date.now();
+    const html = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    alertContainer.insertAdjacentHTML('beforeend', html);
+    setTimeout(() => {
+        const el = document.getElementById(alertId);
+        if (el) el.remove();
+    }, 3500);
+}
+
+// ---------- 编辑（获取单项数据） ----------
+function editClothingItem(itemId) {
+    console.log('编辑服装:', itemId);
+    const editButton = document.querySelector(`.edit-btn[data-item-id="${itemId}"]`);
+    let originalHtml = null;
+    if (editButton) {
+        originalHtml = editButton.innerHTML;
+        editButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        editButton.disabled = true;
+    }
+
+    fetch(`/wardrobe/edit/${itemId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (editButton) {
+            editButton.innerHTML = originalHtml;
+            editButton.disabled = false;
+        }
+        if (!data.success) {
+            showAlert('获取服装信息失败: ' + (data.message || '未知错误'), 'danger');
+            return;
+        }
+
+        const item = data.item;
+        document.getElementById('editItemId').value = item.id || '';
+        document.getElementById('editItemName').value = item.name || '';
+        // 直接把后端返回的中文 category 回填到 select
+        document.getElementById('editItemCategory').value = item.category || '';
+        document.getElementById('editItemColor').value = item.color || '';
+        document.getElementById('editItemBrand').value = item.brand || '';
+        document.getElementById('editItemSeason').value = item.season || '';
+
+        const imagePreview = document.getElementById('editItemImagePreview');
+        if (item.image_path) {
+            imagePreview.src = `/static/${item.image_path}`;
+            imagePreview.style.display = 'block';
+        } else {
+            imagePreview.style.display = 'none';
+        }
+
+        const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+        editModal.show();
+    })
+    .catch(err => {
+        console.error('编辑错误:', err);
+        if (editButton) {
+            editButton.innerHTML = originalHtml;
+            editButton.disabled = false;
+        }
+        showAlert('网络错误: ' + err.message, 'danger');
+    });
+}
+
+// ---------- 更新服装 ----------
+function updateClothingItem() {
+    const itemId = document.getElementById('editItemId').value;
+    const name = document.getElementById('editItemName').value;
+    const category = document.getElementById('editItemCategory').value;
+
+    if (!name || !name.trim()) {
+        showAlert('请输入服装名称', 'warning');
+        return false;
+    }
+    if (!category) {
+        showAlert('请选择服装分类', 'warning');
+        return false;
+    }
+
+    const updateButton = document.getElementById('updateItemBtn');
+    const originalText = updateButton.innerHTML;
+    updateButton.disabled = true;
+    updateButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>更新中...';
+
+    const form = document.getElementById('editItemForm');
+    const formData = new FormData(form);
+
+    fetch(`/wardrobe/update/${itemId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        updateButton.disabled = false;
+        updateButton.innerHTML = originalText;
+        if (data.success) {
+            showAlert('更新成功！', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+            if (modal) modal.hide();
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            showAlert('更新失败: ' + (data.message || '未知错误'), 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('更新错误:', err);
+        updateButton.disabled = false;
+        updateButton.innerHTML = originalText;
+        showAlert('网络错误: ' + err.message, 'danger');
+    });
+
+    return false;
+}
+
+// ---------- 搜索（使用 smart_search） ----------
+function searchClothingItems() {
+    const query = document.getElementById('searchInput').value.trim();
+    const color = (document.getElementById('colorFilter') && document.getElementById('colorFilter').value.trim()) || '';
+    const brand = (document.getElementById('brandFilter') && document.getElementById('brandFilter').value.trim()) || '';
+    const season = (document.getElementById('seasonFilter') && document.getElementById('seasonFilter').value) || '';
+
+    // 合并关键字提交到 smart_search（后端会在 name/brand/color/category/season/occasion 中模糊匹配）
+    const keywords = [];
+    if (query) keywords.push(query);
+    if (color) keywords.push(color);
+    if (brand) keywords.push(brand);
+    if (season) {
+        keywords.push(season); // english season
+        // 也尝试加入中文季节，兼容数据库里存中文季节的情况
+        const seasonMapCN = { 'spring': '春季', 'summer': '夏季', 'autumn': '秋季', 'winter': '冬季' };
+        if (seasonMapCN[season]) keywords.push(seasonMapCN[season]);
+    }
+
+    if (keywords.length === 0) {
+        showAlert('请输入搜索条件', 'warning');
+        return;
+    }
+
+    const q = encodeURIComponent(keywords.join(' '));
+
+    showLoading(true);
+
+    fetch(`/wardrobe/smart_search?q=${q}`)
+    .then(response => response.json())
+    .then(data => {
+        showLoading(false);
+        if (data.success) {
+            displaySearchResults(data.results || []);
+            showAlert(`找到 ${data.count || (data.results && data.results.length) || 0} 个结果`, 'success');
+        } else {
+            showAlert('搜索失败: ' + (data.message || '未知错误'), 'danger');
+        }
+    })
+    .catch(err => {
+        showLoading(false);
+        console.error('搜索错误:', err);
+        showAlert('搜索失败: ' + err.message, 'danger');
+    });
+}
+
+// ---------- 显示搜索结果（将后端结果渲染为卡片） ----------
+function displaySearchResults(results) {
+    const clothingGrid = document.getElementById('clothingGrid');
+
+    if (!results || results.length === 0) {
+        clothingGrid.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">未找到匹配的服装</h4>
+                <p class="text-muted">尝试调整搜索条件</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    results.forEach(item => {
+        const imageSrc = item.image_path ? `/static/${item.image_path}` : '/static/images/placeholder.jpg';
+        const seasonText = getSeasonText(item.season);
+        html += `
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4 clothing-item"
+                 data-category="${item.category || '未分类'}" data-item-id="${item.id}">
+                <div class="card clothing-card">
+                    <img src="${imageSrc}"
+                         class="card-img-top" alt="${(item.name||'')}" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">${item.name || ''}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">${item.category || '未分类'} • ${item.color || '未设置颜色'}</small>
+                            ${item.brand ? `<br><small class="text-muted">品牌: ${item.brand}</small>` : ''}
+                            ${item.season ? `<br><small class="text-muted">季节: ${seasonText}</small>` : ''}
+                        </p>
+                        <div class="clothing-actions">
+                            <button class="btn btn-sm btn-outline-primary edit-btn" data-item-id="${item.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-btn"
+                                    data-item-id="${item.id}"
+                                    data-item-name="${item.name || ''}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    clothingGrid.innerHTML = html;
+}
+
+// ---------- 季节显示转换 ----------
+function getSeasonText(season) {
+    const seasonMap = {
+        'spring': '春季',
+        'summer': '夏季',
+        'autumn': '秋季',
+        'winter': '冬季'
+    };
+    return seasonMap[season] || season || '';
+}
+
+// ---------- 加载提示显示/隐藏 ----------
+function showLoading(show) {
+    const loadingToast = document.getElementById('loadingToast');
+    if (!loadingToast) return;
+    if (show) {
+        const t = new bootstrap.Toast(loadingToast);
+        t.show();
+    } else {
+        const t = bootstrap.Toast.getInstance(loadingToast);
+        if (t) t.hide();
+    }
+}
+
+// ---------- 重置搜索 ----------
+function resetSearch() {
+    const si = document.getElementById('searchInput');
+    if (si) si.value = '';
+    const cf = document.getElementById('colorFilter');
+    if (cf) cf.value = '';
+    const bf = document.getElementById('brandFilter');
+    if (bf) bf.value = '';
+    const sf = document.getElementById('seasonFilter');
+    if (sf) sf.value = '';
+    window.location.reload();
+}
+
+// ---------- 筛选（中文匹配） ----------
+function filterClothingItems(filter) {
+    const items = document.querySelectorAll('.clothing-item');
+    items.forEach(item => {
+        const cat = item.getAttribute('data-category') || '';
+        if (filter === '全部' || cat === filter) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// ---------- 事件绑定 ----------
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🏠 DOM 加载完成');
+
+    // 事件委托：删除 / 编辑 / 筛选 按钮
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-btn')) {
+            const btn = e.target.closest('.delete-btn');
+            const id = btn.getAttribute('data-item-id');
+            const name = btn.getAttribute('data-item-name') || '';
+            deleteClothingItem(id, name);
+            return;
+        }
+
+        if (e.target.closest('.edit-btn')) {
+            const btn = e.target.closest('.edit-btn');
+            const id = btn.getAttribute('data-item-id');
+            editClothingItem(id);
+            return;
+        }
+
+        if (e.target.closest('[data-filter]')) {
+            const btn = e.target.closest('[data-filter]');
+            const filter = btn.getAttribute('data-filter');
+            // 更新按钮激活状态
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterClothingItems(filter);
+            return;
+        }
+    });
+
+    // 搜索按钮
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) searchBtn.addEventListener('click', searchClothingItems);
+
+    // 回车触发搜索
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchClothingItems();
+        });
+    }
+
+    // 高级搜索面板切换
+    const advBtn = document.getElementById('advancedSearchBtn');
+    if (advBtn) {
+        advBtn.addEventListener('click', function() {
+            const panel = document.getElementById('advancedSearchPanel');
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+        });
+    }
+
+    // 应用 & 重置高级搜索
+    const applyBtn = document.getElementById('applyAdvancedSearch');
+    if (applyBtn) applyBtn.addEventListener('click', searchClothingItems);
+    const resetBtn = document.getElementById('resetAdvancedSearch');
+    if (resetBtn) resetBtn.addEventListener('click', resetSearch);
+});
+</script>
+
+<style>
+.clothing-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.clothing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.clothing-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.clothing-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.filter-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0;
+}
+
+/* 搜索框样式调整 */
+.search-input {
+    height: 38px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+}
+
+/* 筛选按钮组样式 */
+.filter-toolbar .btn-group .btn {
+    height: 38px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.advanced-search-panel {
+    transition: all 0.3s ease;
+}
+
+/* 删除动画 */
+.clothing-item {
+    transition: all 0.3s ease;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .filter-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .filter-toolbar .btn-group {
+        justify-content: center;
+        margin-bottom: 0;
+    }
+
+    .search-input {
+        max-width: 100% !important;
+        height: 40px;
+    }
+
+    .advanced-search-panel .card-body .row {
+        flex-direction: column;
+    }
+}
+</style>
+
+<!-- 批量导入模态框 -->
+<div class="modal fade" id="batchImportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量导入本地图库</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="batchImportForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">选择图片文件夹或多张图片</label>
+                        <input type="file" class="form-control" name="images" multiple accept="image/*" webkitdirectory>
+                        <div class="form-text">支持多选图片或选择整个文件夹</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">默认分类</label>
+                        <select class="form-select" name="category">
+                            <option value="未分类">未分类</option>
+                            <option value="上衣">上衣</option>
+                            <option value="下装">下装</option>
+                            <option value="鞋履">鞋履</option>
+                            <option value="配饰">配饰</option>
+                        </select>
+                    </div>
+                </form>
+                <div id="uploadProgress" class="progress mt-3" style="display:none;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">处理中...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="batchImportImages()">开始导入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function batchImportImages() {
+    const form = document.getElementById('batchImportForm');
+    const formData = new FormData(form);
+    const files = form.querySelector('input[type="file"]').files;
+    
+    if (files.length === 0) {
+        showAlert('请选择文件', 'warning');
+        return;
+    }
+
+    document.getElementById('uploadProgress').style.display = 'flex';
+    const btn = document.querySelector('#batchImportModal .btn-primary');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '导入中...';
+
+    fetch('/wardrobe/batch_add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = originalText;
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('batchImportModal')).hide();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(err => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        btn.disabled = false;
+        btn.innerText = originalText;
+        showAlert('导入失败: ' + err.message, 'danger');
+    });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}通知设置 - 云想衣裳{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-bell me-2"></i>通知设置</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="#">
+                        <div class="mb-4">
+                            <h6 class="mb-3">邮件通知</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="emailPromotions" checked>
+                                <label class="form-check-label" for="emailPromotions">促销活动通知</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="emailRecommendations" checked>
+                                <label class="form-check-label" for="emailRecommendations">个性化推荐</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="emailSystem">
+                                <label class="form-check-label" for="emailSystem">系统通知</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="mb-3">推送通知</h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="pushNewItems" checked>
+                                <label class="form-check-label" for="pushNewItems">新品上架提醒</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="pushSales">
+                                <label class="form-check-label" for="pushSales">促销活动提醒</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="pushStyleTips" checked>
+                                <label class="form-check-label" for="pushStyleTips">穿搭建议</label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.account_settings') }}" class="btn btn-secondary me-md-2">返回</a>
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+{% block title %}AI智能穿搭推荐 - FashionAI{% endblock %}
+{% block content %}
+
+<div class="container my-5">
+  <div class="card border-0 rounded-4 shadow-lg p-4 mb-5"
+       style="background: rgba(255,255,255,0.72);">
+    <h2 class="text-center fw-bold mb-4 text-primary glow-text">
+      👗 智能穿搭推荐助手
+    </h2>
+    <p class="text-center text-secondary fs-5 mb-4">让AI帮你读懂时尚，发现更适合你的穿搭灵感 💫</p>
+
+    <!-- 🌍 城市输入 -->
+    <div class="text-center mb-4 fade-in">
+      <div class="row justify-content-center g-2">
+        <div class="col-md-4">
+          <input id="city-input" type="text"
+                 class="form-control form-control-lg shadow-sm"
+                 placeholder="输入城市（如：北京）">
+        </div>
+        <div class="col-md-2">
+          <button id="check-weather-btn" class="btn btn-primary btn-lg w-100 fw-semibold btn-glow">
+            <i class="fas fa-cloud-sun me-1"></i>天气
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- 天气信息 -->
+    <div id="weather-section" class="text-center mb-5 fade-in">
+      <p id="loading-text" class="text-muted" style="display:none;">🌦 正在获取天气，请稍候...</p>
+      <div id="weather-info" class="fw-semibold text-secondary" style="display:none;">
+        <p>📍 当前城市：<span id="city-name">--</span></p>
+        <p>☀️ 天气：<span id="weather-desc">--</span>，气温 <span id="temp">--</span>℃</p>
+      </div>
+      <p id="error-text" class="text-danger mt-2 fw-semibold" style="display:none;">
+        ⚠️ 获取天气失败，请检查城市名称！
+      </p>
+    </div>
+
+    <!-- 关联衣柜开关 -->
+    <div class="text-center mb-4 fade-in">
+      <div class="form-check form-switch d-inline-flex align-items-center gap-2">
+        <input class="form-check-input" type="checkbox" id="wardrobe-toggle">
+        <label class="form-check-label fw-semibold text-secondary" for="wardrobe-toggle">
+          结合我的衣柜
+        </label>
+      </div>
+      <small id="wardrobe-hint" class="text-muted d-block mt-2" style="display:none;">
+        已开启衣柜关联，将优先匹配您衣柜中的单品
+      </small>
+    </div>
+
+    <!-- 👕 上传档案表单 -->
+    <form id="upload-form" enctype="multipart/form-data" class="fade-in" style="display:none;">
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <label class="form-label fw-bold text-secondary">用户名</label>
+          <input type="text" name="username" class="form-control form-control-lg shadow-sm" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold text-secondary">体型</label>
+          <select name="body_shape" class="form-select form-select-lg shadow-sm">
+            <option value="梨形">梨形</option>
+            <option value="苹果形">苹果形</option>
+            <option value="矩形">矩形</option>
+            <option value="沙漏形">沙漏形</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-secondary">身高 (cm)</label>
+          <input type="number" name="height" class="form-control form-control-lg shadow-sm" min="50" max="250" placeholder="如 165">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-secondary">体重 (kg)</label>
+          <input type="number" name="weight" class="form-control form-control-lg shadow-sm" min="20" max="200" placeholder="如 50">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-secondary">年龄</label>
+          <input type="number" name="age" class="form-control form-control-lg shadow-sm" min="10" max="100" placeholder="如 25">
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-bold text-secondary">性别</label>
+        <select name="gender" class="form-select form-select-lg shadow-sm">
+          <option value="未设置">未设置</option>
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-bold text-secondary">肤色</label>
+        <select name="skin_tone" class="form-select form-select-lg shadow-sm">
+          <option value="白皙">白皙</option>
+          <option value="自然">自然</option>
+          <option value="小麦色">小麦色</option>
+          <option value="深色">深色</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-bold text-secondary">风格偏好</label>
+        <div class="d-flex flex-wrap gap-3 mt-2">
+          {% set styles = ['休闲','优雅','街头','运动','复古','极简','甜美','法式','森系'] %}
+          {% for style in styles %}
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="style_pref" value="{{ style }}">
+            <label class="form-check-label fw-semibold">{{ style }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-bold text-secondary">上传衣物图片</label>
+        <input type="file" class="form-control form-control-lg shadow-sm"
+               name="cloth_image" accept="image/*" onchange="previewImage(event)" required>
+        <div class="mt-3 text-center">
+          <img id="preview" src="#" alt="预览图片"
+               class="rounded-4 shadow-lg" style="display:none; max-height:250px;">
+        </div>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="btn btn-primary btn-lg px-5 py-2 fw-semibold shadow-sm upload-btn btn-glow">
+          ✨ 生成穿搭推荐
+        </button>
+      </div>
+    </form>
+
+    <p id="upload-status" class="text-center mt-4 fw-semibold text-info fs-5" style="display:none;">⏳ 正在生成AI推荐...</p>
+
+    <!-- 👗 推荐展示 -->
+    <div id="recommend-section" class="mt-5 p-3 border-top fade-in" style="display:none;">
+      <h4 class="text-center fw-bold text-dark mb-2">🎨 AI智能推荐结果</h4>
+      <div id="wardrobe-badge" class="text-center mb-3" style="display:none;">
+        <span class="badge bg-success px-3 py-2">基于衣柜推荐</span>
+      </div>
+      <div class="row g-4 justify-content-center">
+        <div class="col-md-5 fade-in">
+          <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <img id="user-image" src="#" class="card-img-top" style="height:300px;object-fit:cover;">
+            <div class="card-body text-center">
+              <h6 class="fw-bold text-dark">👩 用户上传</h6>
+              <p class="text-secondary small" id="cloth-style"></p>
+              <p class="text-muted small" id="cloth-color"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-5 fade-in">
+          <div class="card border-0 shadow-sm rounded-4 overflow-hidden hover-card">
+            <img id="recommend-image" src="#" class="card-img-top" style="height:300px;object-fit:cover;">
+            <div class="card-body text-center">
+              <h6 class="fw-bold text-dark">🤖 AI推荐穿搭</h6>
+              <p class="text-secondary small" id="recommend-desc"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🧠 AI分析报告 -->
+      <div class="ai-analysis mt-5 fade-in p-4 rounded-4 shadow-sm">
+        <h5 class="fw-bold text-primary mb-3">🧠 AI图像分析</h5>
+        <p id="ai-desc" class="text-secondary mb-3 typing-text"></p>
+        <h6 class="fw-bold text-primary mt-4">💡 推荐理由</h6>
+        <p id="ai-reason" class="text-secondary typing-text"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 🌤 获取天气
+document.getElementById("check-weather-btn").addEventListener("click", async () => {
+  const city = document.getElementById("city-input").value.trim();
+  const loadingText = document.getElementById("loading-text");
+  const weatherInfo = document.getElementById("weather-info");
+  const errorText = document.getElementById("error-text");
+  const uploadForm = document.getElementById("upload-form");
+
+  if (!city) return alert("请输入城市名称");
+
+  loadingText.style.display = "block";
+  weatherInfo.style.display = "none";
+  errorText.style.display = "none";
+
+  try {
+    trackEvent('click_check_weather', { city });
+    const res = await fetch(`/recommendation/weather`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "获取天气失败");
+
+    document.getElementById("city-name").textContent = data.city;
+    document.getElementById("weather-desc").textContent = data.condition;
+    document.getElementById("temp").textContent = data.temperature;
+    weatherInfo.style.display = "block";
+    uploadForm.style.display = "block";
+  } catch {
+    trackEvent('weather_error', { city });
+    errorText.style.display = "block";
+  } finally {
+    loadingText.style.display = "none";
+  }
+});
+
+// 📸 图片预览
+function previewImage(event) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const output = document.getElementById("preview");
+    output.src = reader.result;
+    output.style.display = "block";
+  };
+  reader.readAsDataURL(event.target.files[0]);
+}
+
+// ✨ 上传逻辑（仅修改数据库相关参数，适配本地图片推荐）
+document.getElementById("upload-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const styles = Array.from(document.querySelectorAll('input[name="style_pref"]:checked')).map(cb => cb.value);
+  formData.append("style_pref", JSON.stringify(styles));
+
+  const cityName = document.getElementById("city-name").textContent;
+  formData.set("city", cityName);
+
+  const height = document.querySelector('input[name="height"]')?.value.trim() || "";
+  const weight = document.querySelector('input[name="weight"]')?.value.trim() || "";
+  const age = document.querySelector('input[name="age"]')?.value.trim() || "";
+  const gender = document.querySelector('select[name="gender"]')?.value || "";
+  const bodyShape = document.querySelector('select[name="body_shape"]')?.value || "";
+  const skinTone = document.querySelector('select[name="skin_tone"]')?.value || "";
+
+  const statusText = document.getElementById("upload-status");
+  const recommendSection = document.getElementById("recommend-section");
+
+  statusText.style.display = "block";
+  statusText.textContent = "⏳ AI正在生成个性化推荐...";
+  recommendSection.style.display = "none";
+  trackEvent('recommend_start', { include_wardrobe: isWardrobeEnabled() });
+
+  try {
+    // 🔹 Step 1: 上传衣物（后端已改为仅存本地，不入库）
+    const res = await fetch("/recommendation/upload", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.error || "上传失败");
+
+    // 显示用户上传图像信息
+    document.getElementById("user-image").src = data.image_url; // 适配后端返回的本地图片URL
+    document.getElementById("cloth-style").textContent = "风格：" + data.style_tag; // 后端直接返回的风格标签
+    document.getElementById("cloth-color").textContent = "主色：" + data.color; // 后端直接返回的主色调
+    typeText("ai-desc", data.description || "AI正在解析图片..."); // 后端直接返回的图片描述
+    trackEvent('upload_success', { filename: data.filename, color: data.color, style_tag: data.style_tag });
+
+    // 🔹 Step 2: 请求AI推荐接口（关键修改：传递本地图片路径，而非用户名查库）
+    const recRes = await fetch("/recommendation/ai_recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        local_path: data.local_path,
+        city: document.getElementById("city-name").textContent,
+        include_wardrobe: isWardrobeEnabled(),
+        user_profile: {
+          height,
+          weight,
+          age,
+          gender,
+          body_shape: bodyShape,
+          skin_tone: skinTone,
+          style_pref: styles
+        }
+      })
+    });
+    const recData = await recRes.json();
+
+    if (!recData.success || !recData.recommendations?.length)
+      throw new Error(recData.error || "AI推荐生成失败");
+
+    // 取第一条推荐结果展示
+    const rec = recData.recommendations[0];
+    document.getElementById("recommend-image").src = rec.image_url;
+    document.getElementById("recommend-desc").textContent = rec.description;
+    typeText("ai-reason", rec.reason);
+    const badge = document.getElementById("wardrobe-badge");
+    if (recData.used_wardrobe || (rec.wardrobe_match && rec.wardrobe_match >= 0.8)) {
+      badge.style.display = "block";
+    } else {
+      badge.style.display = "none";
+    }
+
+    recommendSection.style.display = "block";
+    recommendSection.scrollIntoView({ behavior: "smooth" });
+    statusText.textContent = "✅ 推荐生成完成！";
+    trackEvent('recommend_success', { used_wardrobe: !!recData.used_wardrobe });
+
+  } catch (err) {
+    console.error(err);
+    alert("上传或推荐出错：" + err.message);
+    statusText.textContent = "❌ 出错，请重试。";
+    trackEvent('recommend_error', { message: err.message });
+  }
+});
+
+// 打字机效果
+function typeText(id, text, speed = 25) {
+  const el = document.getElementById(id);
+  el.textContent = "";
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent += text.charAt(i);
+    i++;
+    if (i >= text.length) clearInterval(interval);
+  }, speed);
+}
+</script>
+<script>
+// 衣柜开关持久化
+function isWardrobeEnabled() {
+  try {
+    const val = localStorage.getItem("recommend_include_wardrobe");
+    return val === "1";
+  } catch {
+    return false;
+  }
+}
+function setWardrobeEnabled(enabled) {
+  try {
+    localStorage.setItem("recommend_include_wardrobe", enabled ? "1" : "0");
+    document.cookie = `recommend_include_wardrobe=${enabled ? "1" : "0"}; path=/; max-age=${60*60*24*30}`;
+    trackEvent('toggle_wardrobe', { enabled });
+  } catch {}
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.getElementById("wardrobe-toggle");
+  const hint = document.getElementById("wardrobe-hint");
+  if (toggle) {
+    toggle.checked = isWardrobeEnabled();
+    hint.style.display = toggle.checked ? "block" : "none";
+    toggle.addEventListener("change", () => {
+      setWardrobeEnabled(toggle.checked);
+      hint.style.display = toggle.checked ? "block" : "none";
+    });
+  }
+});
+</script>
+<script>
+// 埋点上报
+function trackEvent(event, payload = {}) {
+  try {
+    fetch('/analytics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event, payload })
+    }).catch(() => {});
+  } catch {}
+}
+</script>
+
+
+<style>
+body { background: transparent; font-family: "Microsoft YaHei", sans-serif; }
+.glow-text { text-shadow: 0 0 8px rgba(66,165,245,0.3); letter-spacing: 1px; }
+.btn-glow {  transition: all 0.3s; }
+.btn-glow:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(33,150,243,0.5); }
+.fade-in { animation: fadeIn 0.6s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.upload-btn {
+  background: #0071e3;
+  border: none;
+}
+.card { transition: all 0.3s ease-in-out; border: 1px solid rgba(0,0,0,0.05); }
+.card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.hover-card:hover img { transform: scale(1.05); transition: all 0.4s ease; }
+.ai-analysis {
+  background: rgba(255,255,255,0.72);
+  border-left: 4px solid #0071e3;
+  animation: fadeIn 1.2s ease;
+}
+.typing-text { white-space: pre-wrap; line-height: 1.8; }
+</style>
+
+
+
+{% endblock %}

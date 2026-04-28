@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI时尚顾问 - 云想衣裳</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f9f7f7;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .consultation-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .features-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .start-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.1);
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f1f1;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: #4CAF50;
+            font-weight: bold;
+            margin-right: 10px;
+            background: #e8f5e9;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: #6a11cb;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .ai-message {
+            background: #e9ecef;
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+
+        .input-area {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px 0 0 25px;
+            outline: none;
+        }
+
+        .input-area button {
+            padding: 12px 20px;
+            background: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 0 25px 25px 0;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #6a11cb;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #2575fc;
+            text-decoration: none;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('main.index') }}" class="back-btn">← 返回主页面</a>
+
+        <header>
+            <h1>AI时尚顾问</h1>
+            <p class="tagline">24小时在线时尚顾问，随时为你提供专业的穿搭建议和时尚资讯。</p>
+        </header>
+
+        <div class="main-content">
+            <section class="consultation-section">
+                <h2>开始咨询</h2>
+                <p>向我们的AI时尚顾问描述你的需求，获取个性化穿搭建议：</p>
+
+                <div class="chat-preview">
+                    <div class="message ai-message">
+                        您好！我是您的AI时尚顾问。请问您今天需要什么样的穿搭建议？例如：商务会议、约会、休闲出游等。
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <input type="text" placeholder="输入您的时尚问题...">
+                    <button>发送</button>
+                </div>
+
+                <button class="start-btn">开始时尚咨询</button>
+            </section>
+
+            <section class="features-section">
+                <h2>服务特色</h2>
+                <ul class="feature-list">
+                    <li>24小时在线，随时解答您的时尚疑问</li>
+                    <li>个性化穿搭建议，根据您的体型和风格偏好</li>
+                    <li>最新时尚趋势和单品推荐</li>
+                    <li>场合着装指南（商务、休闲、约会等）</li>
+                    <li>季节穿搭技巧与色彩搭配建议</li>
+                    <li>预算友好的时尚方案</li>
+                    <li>品牌推荐与购物指南</li>
+                    <li>衣橱整理与单品搭配优化</li>
+                </ul>
+
+                <h2 style="margin-top: 30px;">如何使用</h2>
+                <ol style="padding-left: 20px;">
+                    <li>点击"开始时尚咨询"按钮</li>
+                    <li>描述您的需求：场合、偏好、预算等</li>
+                    <li>获取个性化穿搭建议</li>
+                    <li>进一步细化需求，获得更精准的建议</li>
+                </ol>
+            </section>
+        </div>
+    </div>
+
+    <!-- 在fashion_advisor.html的JavaScript部分，确保API路径正确 -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const startBtn = document.querySelector('.start-btn');
+        const sendBtn = document.querySelector('.input-area button');
+        const chatInput = document.querySelector('.input-area input');
+        const chatPreview = document.querySelector('.chat-preview');
+
+        // 使用蓝图路由的API地址
+        const API_BASE_URL = '/fashion-advisor/api';
+
+        // 开始咨询按钮点击事件
+        startBtn.addEventListener('click', function() {
+          // 重置对话
+          fetch(`${API_BASE_URL}/reset`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+          .then(response => response.json())
+          .then(data => {
+            // 清空聊天预览
+            chatPreview.innerHTML = '';
+            // 添加初始AI消息
+            addMessage('您好！我是您的AI时尚顾问。请问您今天需要什么样的穿搭建议？例如：商务会议、约会、休闲出游等。', 'ai');
+            alert('欢迎使用AI时尚顾问！请在下方输入框描述您的时尚需求。');
+            chatInput.focus();
+          })
+          .catch(error => {
+            console.error('Error resetting conversation:', error);
+            alert('无法连接到AI服务，请确保后端服务器正在运行。');
+          });
+        });
+
+        // 发送消息功能
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            sendMessage();
+          }
+        });
+
+        async function sendMessage() {
+          const message = chatInput.value.trim();
+          if (message) {
+            // 添加用户消息
+            addMessage(message, 'user');
+            chatInput.value = '';
+
+            // 显示加载状态
+            const loadingMessage = addMessage('正在思考中...', 'ai');
+
+            try {
+              // 调用Flask蓝图API
+              const response = await fetch(`${API_BASE_URL}/advice`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message })
+              });
+
+              const data = await response.json();
+
+              // 移除加载消息
+              chatPreview.removeChild(loadingMessage);
+
+              // 添加AI回复
+              if (data.error) {
+                addMessage('抱歉，服务暂时不可用：' + data.error, 'ai');
+              } else {
+                addMessage(data.response, 'ai');
+              }
+            } catch (error) {
+              console.error('Error sending message:', error);
+              // 移除加载消息
+              chatPreview.removeChild(loadingMessage);
+              // 显示错误消息
+              addMessage('抱歉，我暂时无法回答您的问题。请确保AI服务正在运行。', 'ai');
+            }
+          }
+        }
+
+        function addMessage(text, sender) {
+          const messageDiv = document.createElement('div');
+          messageDiv.classList.add('message');
+          messageDiv.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+          messageDiv.textContent = text;
+          chatPreview.appendChild(messageDiv);
+          chatPreview.scrollTop = chatPreview.scrollHeight;
+          return messageDiv;
+        }
+      });
+    </script>
+</body>
+</html>

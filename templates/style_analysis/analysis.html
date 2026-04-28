@@ -1,0 +1,944 @@
+{% extends "base.html" %}
+{% block title %}风格分析 - 云想衣裳{% endblock %}
+{% block content %}
+<style>
+
+        /* 图片完整显示优化 */
+        .preview-container {
+            width: 100%;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #eaeaea;
+        }
+
+        .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        /* 风格示例图片容器优化 - 填满模式 */
+        .card-img-container {
+            height: 200px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        .card-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-img-container img {
+            transform: scale(1.05);
+        }
+
+        .hover-border-primary:hover {
+            border-color: #0071e3 !important;
+        }
+        .hover-shadow:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+        .transition-all {
+            transition: all 0.3s ease;
+        }
+        .object-fit-cover {
+            object-fit: cover;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .border-dashed {
+            border-style: dashed !important;
+        }
+        .border-2 {
+            border-width: 2px !important;
+        }
+        .bg-opacity-10 {
+            --bs-bg-opacity: 0.1;
+        }
+        .bg-opacity-80 {
+            --bs-bg-opacity: 0.8;
+        }
+        .hover-bg-white:hover {
+            background-color: white !important;
+        }
+
+        /* 新增样式 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .nav-link {
+            cursor: pointer;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-highlight {
+            border-color: #0071e3 !important;
+            background-color: rgba(13, 110, 253, 0.05) !important;
+        }
+
+        /* 上传区域美化样式 */
+        .upload-icon {
+            position: relative;
+            padding: 20px;
+        }
+
+        .upload-icon .fa-shirt {
+            animation: bounce 2s infinite;
+        }
+
+        .upload-icon .fa-magic {
+            animation: spin 3s linear infinite;
+        }
+
+        .feature-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .upload-hint {
+            border: 2px dashed #e9ecef !important;
+            transition: all 0.3s ease;
+        }
+
+        .upload-hint:hover {
+            border-color: var(--primary-color) !important;
+            background-color: rgba(13, 110, 253, 0.05) !important;
+        }
+
+        /* 动画效果 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 按钮悬停效果 */
+        .btn-primary {
+            background: #0071e3;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 上传区域悬停效果 */
+        #uploadArea {
+            transition: all 0.3s ease;
+        }
+
+        #uploadArea:hover {
+            border-color: var(--primary-color) !important;
+            background-color: rgba(13, 110, 253, 0.05) !important;
+            transform: translateY(-2px);
+        }
+
+        /* 分析按钮美化 */
+        .analyze-btn {
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+    
+</style>
+<div class="container mt-5 pt-4">
+        <!-- 标题区域 -->
+        <div class="text-center mb-5 fade-in">
+            <h1 class="display-5 fw-bold text-primary mb-3">智能识别服装风格</h1>
+            <p class="lead text-muted">上传一张图片，AI将为您分析其风格类型</p>
+        </div>
+
+        <!-- 上传区域 -->
+        <div id="upload-section" class="row justify-content-center fade-in">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <!-- 上传表单 -->
+                        <div id="uploadArea" class="border-2 border-dashed border-primary rounded-3 p-5 text-center cursor-pointer position-relative bg-light bg-opacity-10">
+                            <div class="d-flex flex-column align-items-center">
+                                <!-- 可爱的上传图标 -->
+                                <div class="upload-icon mb-4">
+                                    <i class="fas fa-cloud-upload-alt fa-4x text-primary opacity-75"></i>
+                                    <i class="fas fa-shirt fa-2x text-warning position-absolute" style="bottom: 20px; right: 20px;"></i>
+                                    <i class="fas fa-magic fa-1x text-success position-absolute" style="top: 20px; left: 20px;"></i>
+                                </div>
+
+                                <h5 class="text-primary mb-3 fw-bold">
+                                    <i class="fas fa-robot me-2"></i>智能识别服装风格
+                                </h5>
+
+                                <p class="text-muted mb-3">上传一张图片，AI将为您分析其风格类型</p>
+
+                                <!-- 特性标签 -->
+                                <div class="feature-tags mb-4">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary me-2 mb-2">
+                                        <i class="fas fa-bolt me-1"></i>快速分析
+                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success me-2 mb-2">
+                                        <i class="fas fa-shield-alt me-1"></i>安全可靠
+                                    </span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning me-2 mb-2">
+                                        <i class="fas fa-star me-1"></i>精准识别
+                                    </span>
+                                    <span class="badge bg-info bg-opacity-10 text-info mb-2">
+                                        <i class="fas fa-smile me-1"></i>简单易用
+                                    </span>
+                                </div>
+
+                                <!-- 上传提示 -->
+                                <div class="upload-hint p-3 rounded bg-white border mb-3">
+                                    <div class="d-flex align-items-center justify-content-center text-muted small">
+                                        <i class="fas fa-mouse-pointer me-2 text-primary"></i>
+                                        <span>点击或拖拽图片到这里上传</span>
+                                    </div>
+                                </div>
+
+                                <div class="text-muted small">
+                                    <i class="fas fa-image me-1 text-success"></i>
+                                    支持 JPG、PNG 格式 •
+                                    <i class="fas fa-weight me-1 text-info"></i>
+                                    最大 10MB
+                                </div>
+                            </div>
+                            <input type="file" id="fileInput" accept="image/*" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer">
+                        </div>
+
+                        <!-- 预览区域 -->
+                        <div id="previewContainer" class="mt-4 d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-eye me-2 text-primary"></i>图片预览
+                                </h5>
+                                <span class="badge bg-primary">准备分析</span>
+                            </div>
+                            <div class="position-relative rounded overflow-hidden border preview-container">
+                                <img id="preview" alt="预览图" class="w-100 h-100">
+                                <button id="removePreview" class="position-absolute top-0 end-0 bg-white bg-opacity-80 hover-bg-white p-2 rounded-circle shadow m-2 border-0">
+                                    <i class="fas fa-times text-muted"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 分析按钮 -->
+                        <div class="text-center mt-4">
+                            <button id="analyzeBtn" disabled class="btn btn-primary analyze-btn">
+                                <i class="fas fa-spinner fa-spin me-2 d-none" id="loadingIcon"></i>
+                                <i class="fas fa-search me-2"></i>
+                                <span id="btnText">开始分析</span>
+                            </button>
+
+                            <!-- 分析提示 -->
+                            <div class="mt-3 text-muted small">
+                                <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                小贴士：选择清晰的服装图片，分析效果更佳哦！
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果展示区域 -->
+        <div id="resultSection" class="row justify-content-center mt-4 d-none fade-in">
+            <div class="col-lg-8">
+                <div id="result" class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <!-- 结果内容将通过JS动态插入 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 风格示例展示 -->
+        <div class="row mt-5 fade-in">
+            <div class="col-12">
+                <h3 class="text-center mb-4">风格示例</h3>
+                <p class="text-muted text-center mb-5">了解不同风格的特点，帮助你更好地理解分析结果</p>
+
+                <div class="row g-4">
+                    <!-- 法式风 -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-img-container">
+                                <img src="{{ url_for('static', filename='images/style_examples/french_style.jpg') }}"
+                                     alt="法式风示例" class="object-fit-cover">
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-shirt text-primary me-2"></i>
+                                    <h6 class="card-title mb-0 fw-bold">法式风</h6>
+                                </div>
+                                <p class="card-text small text-muted">
+                                    源自法国的时尚风格，强调浪漫随性与优雅气质，兼具复古与现代感。
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">方领</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">泡泡袖</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">收腰</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary me-1 mb-1">碎花</span>
+                                </div>
+                                <p class="card-text small text-muted fst-italic">搭配建议：珍珠耳环+细带凉鞋，尽显优雅</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 复古风 -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-img-container">
+                                <img src="{{ url_for('static', filename='images/style_examples/vintage_style.jpg') }}"
+                                     alt="复古风示例" class="object-fit-cover">
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-shirt text-warning me-2"></i>
+                                    <h6 class="card-title mb-0 fw-bold">复古风</h6>
+                                </div>
+                                <p class="card-text small text-muted">
+                                    借鉴20-90年代经典元素，融合现代设计，展现怀旧而不失时尚的独特魅力。
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-warning bg-opacity-10 text-warning me-1 mb-1">格纹</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning me-1 mb-1">灯芯绒</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning me-1 mb-1">高腰</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning me-1 mb-1">垫肩</span>
+                                </div>
+                                <p class="card-text small text-muted fst-italic">搭配建议：复古马丁靴+宽檐帽，强化年代感</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 极简风 -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-img-container">
+                                <img src="{{ url_for('static', filename='images/style_examples/minimal_style.jpg') }}"
+                                     alt="极简风示例" class="object-fit-cover">
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-shirt text-secondary me-2"></i>
+                                    <h6 class="card-title mb-0 fw-bold">极简风</h6>
+                                </div>
+                                <p class="card-text small text-muted">
+                                    以"少即是多"为理念，摒弃冗余装饰，通过简洁线条和高级质感展现品味。
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1">单色</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1">H型</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1">无图案</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1">垂坠感</span>
+                                </div>
+                                <p class="card-text small text-muted fst-italic">搭配建议：金属简约首饰+小白鞋，提升高级感</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 街头风 -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-img-container">
+                                <img src="{{ url_for('static', filename='images/style_examples/street_style.jpg') }}"
+                                     alt="街头风示例" class="object-fit-cover">
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-shirt text-info me-2"></i>
+                                    <h6 class="card-title mb-0 fw-bold">街头风</h6>
+                                </div>
+                                <p class="card-text small text-muted">
+                                    源自城市街头文化，强调个性表达与反叛精神，造型大胆前卫。
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">Oversize</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">涂鸦</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">工装</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info me-1 mb-1">叠穿</span>
+                                </div>
+                                <p class="card-text small text-muted fst-italic">搭配建议：老爹鞋+棒球帽，彰显街头态度</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 甜美风 -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-img-container">
+                                <img src="{{ url_for('static', filename='images/style_examples/sweet_style.jpg') }}"
+                                     alt="甜美风示例" class="object-fit-cover">
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-shirt text-danger me-2"></i>
+                                    <h6 class="card-title mb-0 fw-bold">甜美风</h6>
+                                </div>
+                                <p class="card-text small text-muted">
+                                    以可爱、活泼为核心，通过柔和色彩与俏皮元素展现少女感与亲和力。
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">蕾丝</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">荷叶边</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">蝴蝶结</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger me-1 mb-1">亮片</span>
+                                </div>
+                                <p class="card-text small text-muted fst-italic">搭配建议：玛丽珍鞋+毛绒包，提升甜美度</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 通勤风 -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-img-container">
+                                <img src="{{ url_for('static', filename='images/style_examples/office_style.jpg') }}"
+                                     alt="通勤风示例" class="object-fit-cover">
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-shirt text-success me-2"></i>
+                                    <h6 class="card-title mb-0 fw-bold">通勤风</h6>
+                                </div>
+                                <p class="card-text small text-muted">
+                                    适合职场场合的实用风格，兼顾专业感与舒适度，展现干练得体形象。
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-success bg-opacity-10 text-success me-1 mb-1">西装</span>
+                                    <span class="badge bg-success bg-opacity-10 text-success me-1 mb-1">衬衫</span>
+                                    <span class="badge bg-success bg-opacity-10 text-success me-1 mb-1">直筒裤</span>
+                                    <span class="badge bg-success bg-opacity-10 text-success me-1 mb-1">低饱和</span>
+                                </div>
+                                <p class="card-text small text-muted fst-italic">搭配建议：高跟鞋+公文包，凸显职业气质</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔍 页面加载完成，开始初始化...');
+
+        // DOM元素
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const preview = document.getElementById('preview');
+        const removePreview = document.getElementById('removePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingIcon = document.getElementById('loadingIcon');
+        const btnText = document.getElementById('btnText');
+        const resultSection = document.getElementById('resultSection');
+        const result = document.getElementById('result');
+
+        let selectedFile = null;
+
+        console.log('🔍 uploadArea元素:', uploadArea);
+        console.log('🔍 fileInput元素:', fileInput);
+
+        if (!uploadArea) {
+            console.error('❌ 找不到uploadArea元素');
+            return;
+        }
+        if (!fileInput) {
+            console.error('❌ 找不到fileInput元素');
+            return;
+        }
+
+        // 阻止导航栏链接跳转
+        
+
+        // 上传区域点击触发文件选择 - 修复版本
+        uploadArea.addEventListener('click', function(e) {
+            console.log('🔍 点击了上传区域');
+
+            // 如果点击的是移除按钮或其子元素，不触发文件选择
+            if (e.target.closest('#removePreview')) {
+                console.log('🔍 点击了移除按钮，跳过文件选择');
+                return;
+            }
+
+            // 如果点击的是文件输入框本身，不重复触发
+            if (e.target === fileInput) {
+                return;
+            }
+
+            console.log('🔍 触发文件选择对话框');
+            fileInput.click();
+        });
+
+        // 文件输入框点击事件 - 防止事件冒泡
+        fileInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('🔍 文件输入框被点击');
+        });
+
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('upload-highlight');
+            console.log('🔍 拖拽进入上传区域');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            // 只有当鼠标离开上传区域时才移除高亮
+            const relatedTarget = e.relatedTarget;
+            if (!uploadArea.contains(relatedTarget) && relatedTarget !== uploadArea) {
+                uploadArea.classList.remove('upload-highlight');
+                console.log('🔍 拖拽离开上传区域');
+            }
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('upload-highlight');
+
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                console.log('🔍 拖拽文件:', files[0].name);
+                handleFile(files[0]);
+            }
+        });
+
+        // 处理选择的文件
+        fileInput.addEventListener('change', function(e) {
+            console.log('🔍 文件选择变化:', e.target.files);
+
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                console.log('🔍 选择了文件:', files[0].name);
+                handleFile(files[0]);
+            } else {
+                console.log('🔍 没有选择文件');
+            }
+        });
+
+        // 移除预览
+        removePreview.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('🔍 移除预览');
+
+            resetPreview();
+        });
+
+        // 预览图片并启用分析按钮
+        function handleFile(file) {
+            console.log('🔍 处理文件:', file.name, '大小:', file.size, '类型:', file.type);
+
+            if (!file.type.startsWith('image/')) {
+                alert('请上传图片文件 (JPG, PNG 等)');
+                resetFileInput();
+                return;
+            }
+
+            // 检查文件大小（最大10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                alert('文件大小不能超过10MB');
+                resetFileInput();
+                return;
+            }
+
+            if (file.size === 0) {
+                alert('文件为空，请选择有效的图片文件');
+                resetFileInput();
+                return;
+            }
+
+            selectedFile = file;
+            const reader = new FileReader();
+
+            reader.onloadstart = function() {
+                console.log('🔍 开始读取文件');
+            };
+
+            reader.onload = function(e) {
+                console.log('🔍 文件读取完成，显示预览');
+                preview.src = e.target.result;
+                preview.onload = function() {
+                    console.log('🔍 预览图片加载完成');
+                    previewContainer.classList.remove('d-none');
+
+                    // 启用按钮
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.classList.remove('btn-secondary');
+                    analyzeBtn.classList.add('btn-primary');
+
+                    // 滚动到预览区域
+                    setTimeout(function() {
+                        previewContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 300);
+                };
+            };
+
+            reader.onerror = function(error) {
+                console.error('❌ 文件读取失败:', error);
+                alert('文件读取失败，请重试');
+                resetPreview();
+            };
+
+            reader.onabort = function() {
+                console.warn('⚠️ 文件读取被中止');
+                resetPreview();
+            };
+
+            try {
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('❌ 读取文件时发生错误:', error);
+                alert('文件读取错误，请选择其他图片');
+                resetPreview();
+            }
+        }
+
+        // 重置文件输入
+        function resetFileInput() {
+            fileInput.value = '';
+        }
+
+        // 重置预览状态
+        function resetPreview() {
+            console.log('🔍 重置预览状态');
+            preview.src = '';
+            previewContainer.classList.add('d-none');
+            selectedFile = null;
+            analyzeBtn.disabled = true;
+            analyzeBtn.classList.remove('btn-primary');
+            analyzeBtn.classList.add('btn-secondary');
+
+            // 重置文件输入
+            resetFileInput();
+        }
+
+        // 分析图片
+        analyzeBtn.addEventListener('click', async function() {
+            if (!selectedFile) {
+                console.log('🔍 没有选择文件，无法分析');
+                alert('请先选择一张图片');
+                return;
+            }
+
+            if (analyzeBtn.disabled) {
+                console.log('🔍 分析按钮被禁用，跳过点击');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            try {
+                console.log('🔍 开始分析图片:', selectedFile.name);
+
+                // 显示加载状态
+                analyzeBtn.disabled = true;
+                loadingIcon.classList.remove('d-none');
+                btnText.textContent = '分析中...';
+                resultSection.classList.add('d-none');
+
+                // 使用正确的API端点
+                const response = await fetch('/style-analysis/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('分析结果:', data);
+
+                // 处理分析结果
+                if (data.style) {
+                    // 成功结果
+                    const confidencePercent = (data.confidence * 100).toFixed(2);
+                    const confidenceWidth = (data.confidence * 100).toFixed(0);
+
+                    result.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <h4 class="fw-bold text-dark mb-2">分析结果</h4>
+                                <p class="text-muted mb-0">AI识别出以下风格类型</p>
+                            </div>
+                            <span class="badge bg-primary px-3 py-2 fs-6">
+                                <i class="fas fa-tag me-1"></i>${data.style}
+                            </span>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">
+                                    <i class="fas fa-chart-line me-1"></i>置信度
+                                </span>
+                                <span class="fw-bold text-primary">${confidencePercent}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 5px;">
+                                <div class="progress-bar bg-gradient"
+                                     role="progressbar"
+                                     style="width: ${confidenceWidth}%; border-radius: 5px;"
+                                     aria-valuenow="${confidenceWidth}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info border-0 bg-opacity-10">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-lightbulb text-info me-2 fs-5"></i>
+                                <div>
+                                    <strong>风格解读:</strong>
+                                    <p class="mb-0 small">${getStyleDescription(data.style)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="newAnalysis" class="btn btn-outline-primary w-100 py-2 fw-medium">
+                            <i class="fas fa-plus me-2"></i>分析新图片
+                        </button>
+                    `;
+
+                    // 添加新分析按钮事件
+                    document.getElementById('newAnalysis').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        resetPreview();
+                        resultSection.classList.add('d-none');
+                        // 滚动到上传区域
+                        setTimeout(function() {
+                            uploadArea.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                    });
+
+                } else {
+                    // 错误结果
+                    result.innerHTML = `
+                        <div class="d-flex align-items-start mb-4">
+                            <i class="fas fa-exclamation-triangle text-warning fs-4 mt-1 me-3"></i>
+                            <div>
+                                <h4 class="fw-bold text-dark mb-1">分析失败</h4>
+                                <p class="text-muted mb-0">${data.error || '服务器处理出错，请稍后重试'}</p>
+                            </div>
+                        </div>
+                        <button id="retryBtn" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-redo me-2"></i>重新尝试
+                        </button>
+                    `;
+
+                    document.getElementById('retryBtn').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        resultSection.classList.add('d-none');
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.classList.add('btn-primary');
+                        analyzeBtn.classList.remove('btn-secondary');
+                    });
+                }
+
+                // 显示结果区域
+                resultSection.classList.remove('d-none');
+                setTimeout(function() {
+                    resultSection.scrollIntoView({ behavior: 'smooth' });
+                }, 300);
+
+            } catch (error) {
+                console.error('分析出错:', error);
+                result.innerHTML = `
+                    <div class="d-flex align-items-start mb-4">
+                        <i class="fas fa-exclamation-circle text-danger fs-4 mt-1 me-3"></i>
+                        <div>
+                            <h4 class="fw-bold text-dark mb-1">网络错误</h4>
+                            <p class="text-muted mb-0">请检查网络连接后重试，或稍后再试</p>
+                        </div>
+                    </div>
+                    <button id="retryBtn" class="btn btn-primary w-100 py-2">
+                        <i class="fas fa-redo me-2"></i>重新尝试
+                    </button>
+                `;
+
+                document.getElementById('retryBtn').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    resultSection.classList.add('d-none');
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.classList.add('btn-primary');
+                    analyzeBtn.classList.remove('btn-secondary');
+                });
+
+                resultSection.classList.remove('d-none');
+            } finally {
+                // 恢复按钮状态
+                loadingIcon.classList.add('d-none');
+                btnText.textContent = '开始分析';
+            }
+        });
+
+        // 获取风格描述
+        // 获取风格描述和穿搭推荐
+        function getStyleDescription(style) {
+            const styleData = {
+                "法式风": {
+                    description: "优雅浪漫的法国风格，强调随性气质与精致细节",
+                    features: ["方领设计", "泡泡袖", "高腰剪裁", "碎花元素"],
+                    outfitRecommendations: [
+                        "方领连衣裙 + 细带凉鞋 + 草编包",
+                        "条纹衫 + 高腰牛仔裤 + 芭蕾平底鞋",
+                        "茶歇裙 + 穆勒鞋 + 丝巾发带",
+                        "针织开衫 + 碎花半裙 + 乐福鞋"
+                    ],
+                    accessoryTips: "珍珠耳环、金属细项链、竹篮包、贝雷帽",
+                    colorPalette: "海军蓝、奶油白、酒红色、碎花元素"
+                },
+                "复古风": {
+                    description: "怀旧经典元素与现代设计的完美融合",
+                    features: ["格纹图案", "灯芯绒材质", "高腰设计", "垫肩元素"],
+                    outfitRecommendations: [
+                        "格纹西装 + 喇叭裤 + 厚底鞋",
+                        "波点连衣裙 + 玛丽珍鞋 + 宽檐帽",
+                        "高腰牛仔裤 + 印花衬衫 + 马丁靴",
+                        "灯芯绒外套 + A字裙 + 短靴"
+                    ],
+                    accessoryTips: "复古墨镜、皮质腰带、丝巾、链条包",
+                    colorPalette: "大地色系、酒红色、墨绿色、复古印花"
+                },
+                "极简风": {
+                    description: "简约而不简单，注重剪裁与质感的纯粹美学",
+                    features: ["单色设计", "利落线条", "优质面料", "无冗余装饰"],
+                    outfitRecommendations: [
+                        "白衬衫 + 黑色西裤 + 小白鞋",
+                        "针织连衣裙 + 平底鞋 + 托特包",
+                        "廓形外套 + 直筒裤 + 乐福鞋",
+                        "高领毛衣 + 半身裙 + 短靴"
+                    ],
+                    accessoryTips: "简约手表、金属耳环、皮质手提包",
+                    colorPalette: "黑白灰、米色、驼色、藏青色"
+                },
+                "街头风": {
+                    description: "个性张扬的城市文化，展现自由不羁的态度",
+                    features: ["Oversize剪裁", "涂鸦元素", "混搭层次", "运动元素"],
+                    outfitRecommendations: [
+                        "卫衣 + 工装裤 + 运动鞋",
+                        "牛仔外套 + 骑行裤 + 老爹鞋",
+                        "印花T恤 + 破洞牛仔裤 + 帆布鞋",
+                        "夹克 + 运动裤 + 棒球帽"
+                    ],
+                    accessoryTips: "棒球帽、斜挎包、金属链条、运动袜",
+                    colorPalette: "亮色系、迷彩、黑色、金属色"
+                },
+                "甜美风": {
+                    description: "可爱活泼的少女感，充满温柔与亲和力",
+                    features: ["蕾丝装饰", "荷叶边", "蝴蝶结", "泡泡袖"],
+                    outfitRecommendations: [
+                        "蕾丝连衣裙 + 玛丽珍鞋 + 珍珠发夹",
+                        "泡泡袖上衣 + 百褶裙 + 小白鞋",
+                        "碎花衬衫 + 背带裙 + 平底鞋",
+                        "荷叶边上衣 + A字裙 + 芭蕾鞋"
+                    ],
+                    accessoryTips: "蝴蝶结发饰、珍珠项链、毛绒包、丝带",
+                    colorPalette: "粉色系、奶油色、马卡龙色、小碎花"
+                },
+                "通勤风": {
+                    description: "专业得体的职场装扮，兼顾舒适与时尚",
+                    features: ["西装元素", "衬衫款式", "直筒剪裁", "简约设计"],
+                    outfitRecommendations: [
+                        "西装外套 + 衬衫 + 西裤 + 高跟鞋",
+                        "针织衫 + 铅笔裙 + 乐福鞋",
+                        "风衣 + 连衣裙 + 短靴",
+                        "衬衫裙 + 腰带 + 平底鞋"
+                    ],
+                    accessoryTips: "简约手表、通勤包、珍珠耳钉、丝巾",
+                    colorPalette: "中性色、低饱和度、藏蓝、卡其色"
+                }
+            };
+
+            const data = styleData[style] || {
+                description: "这是一种独特的时尚风格，展现个人品味",
+                features: ["个性化设计", "独特剪裁"],
+                outfitRecommendations: ["根据个人喜好搭配"],
+                accessoryTips: "选择适合的配饰",
+                colorPalette: "多种色彩选择"
+            };
+
+            return `
+                <div class="style-details">
+                    <div class="mb-3">
+                        <strong>风格特征:</strong>
+                        <div class="mt-1">
+                            ${data.features.map(feature =>
+                                `<span class="badge bg-light text-dark me-1 mb-1">${feature}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>穿搭推荐:</strong>
+                        <ul class="mt-1 small mb-0">
+                            ${data.outfitRecommendations.map(outfit =>
+                                `<li>${outfit}</li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>配饰建议:</strong>
+                        <p class="mt-1 small mb-0">${data.accessoryTips}</p>
+                    </div>
+
+                    <div class="mb-2">
+                        <strong>色彩搭配:</strong>
+                        <p class="mt-1 small mb-0">${data.colorPalette}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 初始化完成
+        console.log('✅ 页面初始化完成');
+    });
+</script>
+{% endblock %}

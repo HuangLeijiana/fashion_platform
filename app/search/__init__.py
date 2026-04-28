@@ -1,0 +1,1 @@
+from app.search.views import search_bp

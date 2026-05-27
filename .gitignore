@@ -29,5 +29,15 @@ package-lock.json
 .tmp/
 *.log
 
+# Models & checkpoints
+*.pth
+*.bin
+app/models/
+app/checkpoints/
+app/style_analysis/
+
+# Large uploads
+static/uploads/
+
 # Config
 *.local

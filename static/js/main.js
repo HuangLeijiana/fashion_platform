@@ -1,3 +1,137 @@
+const liquidTargetSelector = [
+    '.hero-badge',
+    '.stat-card',
+    '.flow-card',
+    '.feature-card',
+    '.card',
+    '.clothing-card',
+    '.product-card',
+    '.filter-toolbar',
+    '.search-box',
+    '.advanced-search-panel .card',
+    '.dropdown-menu',
+    '.modal-content',
+    '.auth-wrapper',
+    '.btn',
+    '.nav-link',
+    '.dropdown-item'
+].join(', ');
+
+function liquidMotionAllowed() {
+    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function liquidPointerAllowed() {
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+}
+
+function resetLiquidState(element) {
+    if (!element) return;
+    element.style.setProperty('--liquid-glow-x', '50%');
+    element.style.setProperty('--liquid-glow-y', '26%');
+    element.style.setProperty('--liquid-tilt-x', '0deg');
+    element.style.setProperty('--liquid-tilt-y', '0deg');
+    element.style.setProperty('--liquid-scale', '1');
+    element.style.setProperty('--liquid-lift', '0px');
+}
+
+function bindLiquidSurface(element) {
+    if (!element || element.dataset.liquidReady === 'true') return;
+
+    const isInteractive = element.matches('.btn, .nav-link, .dropdown-item');
+    element.dataset.liquidReady = 'true';
+    element.classList.add(isInteractive ? 'liquid-interactive' : 'liquid-surface');
+    resetLiquidState(element);
+
+    if (!liquidMotionAllowed() || !liquidPointerAllowed()) return;
+
+    let frameId = null;
+
+    const updateFromPointer = function(event) {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+
+        const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+        const y = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+        const ratioX = x / rect.width;
+        const ratioY = y / rect.height;
+
+        if (frameId) cancelAnimationFrame(frameId);
+
+        frameId = requestAnimationFrame(function() {
+            const tiltX = ((0.5 - ratioY) * (isInteractive ? 5 : 7)).toFixed(2) + 'deg';
+            const tiltY = ((ratioX - 0.5) * (isInteractive ? 7 : 9)).toFixed(2) + 'deg';
+
+            element.style.setProperty('--liquid-glow-x', (ratioX * 100).toFixed(2) + '%');
+            element.style.setProperty('--liquid-glow-y', (ratioY * 100).toFixed(2) + '%');
+            element.style.setProperty('--liquid-tilt-x', tiltX);
+            element.style.setProperty('--liquid-tilt-y', tiltY);
+            element.style.setProperty('--liquid-scale', isInteractive ? '1.02' : '1.012');
+            if (!isInteractive) {
+                element.style.setProperty('--liquid-lift', '-6px');
+            }
+        });
+    };
+
+    const resetPointerState = function() {
+        if (frameId) cancelAnimationFrame(frameId);
+        frameId = requestAnimationFrame(function() {
+            resetLiquidState(element);
+        });
+    };
+
+    element.addEventListener('pointerenter', updateFromPointer, { passive: true });
+    element.addEventListener('pointermove', updateFromPointer, { passive: true });
+    element.addEventListener('pointerleave', resetPointerState, { passive: true });
+    element.addEventListener('pointercancel', resetPointerState, { passive: true });
+    element.addEventListener('pointerdown', function() {
+        element.style.setProperty('--liquid-scale', isInteractive ? '0.985' : '0.996');
+    }, { passive: true });
+    element.addEventListener('pointerup', function() {
+        element.style.setProperty('--liquid-scale', isInteractive ? '1.02' : '1.012');
+    }, { passive: true });
+}
+
+function setupLiquidGlass(root) {
+    const scope = root || document;
+    const targets = [];
+
+    if (scope.nodeType === 1 && scope.matches && scope.matches(liquidTargetSelector)) {
+        targets.push(scope);
+    }
+
+    if (scope.querySelectorAll) {
+        scope.querySelectorAll(liquidTargetSelector).forEach(function(element) {
+            targets.push(element);
+        });
+    }
+
+    targets.forEach(bindLiquidSurface);
+}
+
+function observeLiquidGlass() {
+    if (!document.body || document.body.dataset.liquidObserved === 'true') return;
+
+    document.body.dataset.liquidObserved = 'true';
+
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                    setupLiquidGlass(node);
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+window.setupLiquidGlass = setupLiquidGlass;
+
 document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar');
     const animatedCards = document.querySelectorAll('.feature-card, .benefit-item, .card, .clothing-item');
@@ -6,11 +140,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (navbar) {
         window.addEventListener('scroll', function() {
             if (window.scrollY > 80) {
-                navbar.style.background = 'rgba(255, 255, 255, 0.88)';
-                navbar.style.backdropFilter = 'blur(14px)';
+                navbar.style.background = 'linear-gradient(180deg, rgba(255, 255, 255, 0.84) 0%, rgba(255, 255, 255, 0.62) 100%), linear-gradient(135deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.34) 100%)';
+                navbar.style.backdropFilter = 'saturate(190%) blur(28px)';
+                navbar.style.webkitBackdropFilter = 'saturate(190%) blur(28px)';
+                navbar.style.boxShadow = '0 0 0 0.5px rgba(255, 255, 255, 0.68), 0 14px 30px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -1px 0 rgba(255, 255, 255, 0.16)';
             } else {
-                navbar.style.background = 'rgba(255, 255, 255, 0.72)';
-                navbar.style.backdropFilter = 'blur(10px)';
+                navbar.style.background = 'linear-gradient(180deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0.44) 100%), linear-gradient(135deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.30) 100%)';
+                navbar.style.backdropFilter = 'saturate(185%) blur(24px)';
+                navbar.style.webkitBackdropFilter = 'saturate(185%) blur(24px)';
+                navbar.style.boxShadow = '0 0 0 0.5px rgba(255, 255, 255, 0.64), 0 12px 28px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(255, 255, 255, 0.18)';
             }
         });
     }
@@ -21,6 +159,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0) scale(1)';
+                window.setTimeout(function() {
+                    entry.target.style.removeProperty('transform');
+                }, 760);
                 observer.unobserve(entry.target);
             }
         });
@@ -48,6 +189,9 @@ document.addEventListener('DOMContentLoaded', function() {
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
+
+    setupLiquidGlass(document);
+    observeLiquidGlass();
 });
 
 // ===== 兼容旧页面的搜索范围函数 =====

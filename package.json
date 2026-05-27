@@ -1,7 +1,17 @@
 {
+  "scripts": {
+    "advisor:dev": "vite --config vite.advisor.config.js",
+    "advisor:build": "vite build --config vite.advisor.config.js",
+    "advisor:preview": "vite preview --config vite.advisor.config.js"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "ollama": "^0.6.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.7",
+    "vue": "^3.5.22"
   }
 }

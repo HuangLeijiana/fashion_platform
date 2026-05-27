@@ -36,8 +36,20 @@ app/models/
 app/checkpoints/
 app/style_analysis/
 
+# Duplicate image directories (consolidated into static/images/products/)
+clothes/
+static/fashion_images/
+
 # Large uploads
 static/uploads/
+
+# Generated data
+*.pkl
+*.npy
+*.npz
+
+# Pytest
+.pytest_cache/
 
 # Config
 *.local

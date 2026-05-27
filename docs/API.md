@@ -208,7 +208,7 @@ HTTP 状态码：`401`
   "city": "北京",
   "recommendations": [
     {
-      "image_url": "/static/fashion_images/001.jpg",
+      "image_url": "/static/images/products/001.jpg",
       "similarity": 0.8923,
       "color": "黑色",
       "description": "经典黑色T恤，休闲风设计",
@@ -253,7 +253,7 @@ HTTP 状态码：`401`
 
 | 字段 | 类型 | 必填 | 说明 |
 |:-----|:-----|:-----|:-----|
-| local_dir | string | 否 | 图片目录路径，默认 `fashion_images` |
+| local_dir | string | 否 | 图片目录路径，默认 `images/products` |
 
 **成功响应（200）：**
 
@@ -267,7 +267,7 @@ HTTP 状态码：`401`
     "重复跳过数": 3,
     "导入失败数": 2
   },
-  "dest_folder": "static/fashion_images"
+  "dest_folder": "static/images/products"
 }
 ```
 

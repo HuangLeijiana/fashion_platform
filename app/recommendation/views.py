@@ -562,7 +562,7 @@ def ai_recommend():
 
         # 3. 准备候选池
         static_folder = os.path.abspath(os.path.join(current_app.root_path, '../static'))
-        fashion_folder = os.path.join(static_folder, 'fashion_images')
+        fashion_folder = os.path.join(static_folder, 'images', 'products')
         
         candidates = [] # 存储 (image_path, source_type, metadata)
         
@@ -773,7 +773,7 @@ def recommendation():
         # 2. 定义需要扫描的本地图片文件夹
         target_folders = [
             os.path.join(static_root, 'uploads'),
-            os.path.join(static_root, 'fashion_images')
+            os.path.join(static_root, 'images', 'products')
         ]
 
         # 3. 自动创建缺失的文件夹
@@ -832,7 +832,7 @@ def handle_exception(e):
         "error": {
             "type": type(e).__name__,
             "message": error_detail,
-            "tip": "若为文件夹相关错误，请检查static/uploads和static/fashion_images是否存在，且有读写权限"
+            "tip": "若为文件夹相关错误，请检查static/uploads和static/images/products是否存在，且有读写权限"
         }
     }), 500
 
@@ -844,7 +844,7 @@ def import_local_images():
     try:
         # 1. 接收前端参数
         data = request.get_json()
-        local_dir = data.get('local_dir', 'fashion_images')
+        local_dir = data.get('local_dir', 'images/products')
         if not os.path.isabs(local_dir):
             project_root = os.path.abspath(os.path.join(current_app.root_path, '../'))
             local_dir = os.path.join(project_root, local_dir)
@@ -859,7 +859,7 @@ def import_local_images():
             }), 400
 
         # 3. 定义目标文件夹
-        dest_folder = os.path.join(current_app.root_path, 'static', 'fashion_images')
+        dest_folder = os.path.join(current_app.root_path, 'static', 'images', 'products')
         os.makedirs(dest_folder, exist_ok=True)
 
         # 4. 收集本地图库中的所有图片
@@ -916,7 +916,7 @@ def import_local_images():
                 "重复跳过数": skipped_count,
                 "导入失败数": len(failed_list)
             },
-            "dest_folder": "static/fashion_images",
+            "dest_folder": "static/images/products",
             "tip": "导入的图片已自动添加纯中文描述和标签，可直接用于推荐"
         }
 

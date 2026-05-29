@@ -13,6 +13,7 @@ from app.fashion_advisor.knowledge_base import FashionKnowledgeBase, RetrievedDo
 from app.fashion_advisor.llm_client import AdvisorLLMClient
 from app.fashion_advisor.prompts import build_style_plan_prompts
 from app.services.ai_service import AIService
+from app.services.image_utils import extract_dominant_color
 from app.services.weather_service import weather_service
 
 logger = logging.getLogger(__name__)
@@ -320,7 +321,7 @@ class OutfitAdvisorAgent:
 
         try:
             image = Image.open(image_path).convert("RGB")
-            dominant_color = self._extract_dominant_color(image)
+            dominant_color = extract_dominant_color(image)
         except Exception:
             dominant_color = color_hint or "未知"
 
@@ -813,30 +814,6 @@ class OutfitAdvisorAgent:
             "黄色": "明亮轻快",
         }
         return mapping.get(dominant_color, dominant_color)
-
-    @staticmethod
-    def _extract_dominant_color(image: Image.Image) -> str:
-        array = np.array(image.resize((80, 80))).reshape(-1, 3)
-        mean_rgb = array.mean(axis=0)
-        red, green, blue = mean_rgb
-
-        if max(mean_rgb) < 55:
-            return "黑色"
-        if min(mean_rgb) > 215 and np.std(mean_rgb) < 15:
-            return "白色"
-        if abs(red - green) < 12 and abs(green - blue) < 12:
-            return "灰色"
-        if blue >= red and blue >= green:
-            return "蓝色"
-        if red >= blue and red >= green:
-            if green > 150:
-                return "黄色"
-            if blue > 135:
-                return "粉色"
-            return "红色"
-        if green >= red and green >= blue:
-            return "棕色" if red > 140 else "绿色"
-        return "卡其色"
 
     @staticmethod
     def _infer_color_family_from_path(image_path: str) -> str:

@@ -14,9 +14,13 @@ from werkzeug.utils import secure_filename
 import glob
 from datetime import datetime
 import traceback
+import logging
 from . import recommendation_bp
 import random
+
+logger = logging.getLogger(__name__)
 from app.services.ai_service import ai_service
+from app.services.image_utils import extract_dominant_color
 from app.extensions import db
 from app.models import UserProfile
 
@@ -87,114 +91,8 @@ def image_to_description(image_path, user_style=None):
         return random.choice(descriptions)
 
     except Exception as e:
-        print(f"[ERROR] 规则描述生成失败: {e}")
+        logger.error("规则描述生成失败: %s", e)
         return "时尚服饰单品，适合多种场合穿搭"
-
-
-def extract_dominant_color(image_path):
-    """KMeans提取主色调（纯中文结果）- 优化版"""
-    try:
-        data = np.fromfile(image_path, dtype=np.uint8)
-        image = cv2.imdecode(data, cv2.IMREAD_COLOR)
-        if image is None:
-            return "未知"
-        
-        # Resize for speed
-        image = cv2.resize(image, (50, 50))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pixels = np.float32(image.reshape(-1, 3))
-        
-        # Use k=5 to capture more details
-        k = 5
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        _, labels, centers = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-        
-        # Count labels to find most common clusters
-        counts = np.bincount(labels.flatten())
-        # Sort indices by count (descending)
-        sorted_indices = np.argsort(counts)[::-1]
-        
-        # Analyze clusters to find the best dominant color (skipping background)
-        for i in sorted_indices:
-            color_rgb = centers[i].astype(int)
-            color_hsv = cv2.cvtColor(np.uint8([[color_rgb]]), cv2.COLOR_RGB2HSV)[0][0]
-            h, s, v = color_hsv
-            
-            # Skip background-like colors if they are the largest cluster
-            # White background: Low Saturation, High Value
-            is_background_white = (s < 20 and v > 230)
-            # Black background: Very Low Value
-            is_background_black = (v < 40)
-            
-            # Only skip if it's the largest cluster and we have alternatives
-            if i == sorted_indices[0] and len(sorted_indices) > 1:
-                if is_background_white or is_background_black:
-                    continue
-            
-            # --- Color Classification Logic ---
-            
-            # 1. Black / Grey / White
-            if v < 45: # Strict Black (slightly relaxed from 40 to catch deep blacks)
-                return "黑色"
-            if s < 15 and v > 210: # White
-                return "白色"
-            if s < 40: # Grey range
-                return "灰色"
-                
-            # 2. Colors by Hue
-            # Red: 0-10, 340-360
-            if 0 <= h <= 10 or 340 <= h <= 360:
-                # Check for Brown masquerading as Red
-                if v < 120 or (s < 80 and v < 180):
-                    return "棕色"
-                return "红色"
-                
-            # Orange: 11-25
-            if 11 <= h <= 25:
-                # Orange often confused with Brown.
-                if v < 160 or s < 120:
-                    return "棕色"
-                return "橙色"
-                
-            # Yellow: 26-35
-            if 26 <= h <= 35:
-                if v < 100:
-                    return "棕色"
-                return "黄色"
-                
-            # Green: 36-85
-            if 36 <= h <= 85:
-                if v < 60:
-                    return "黑色" # Dark green looks black
-                return "绿色"
-                
-            # Blue: 86-170
-            if 86 <= h <= 170:
-                if v < 60:
-                    return "黑色" # Dark blue looks black
-                return "蓝色"
-                
-            # Purple: 171-260
-            if 171 <= h <= 260:
-                return "紫色"
-                
-            # Pink: 261-320
-            if 261 <= h <= 320:
-                if s < 40 and v > 200:
-                    return "白色" # Pale pink looks white
-                return "粉色"
-                
-            # Red/Brown catch-all
-            if 321 <= h <= 340:
-                return "棕色"
-                
-            return "其他"
-            
-        return "其他"
-
-    except Exception as e:
-        print("[ERROR] 提取颜色失败:", e)
-        return "其他"
 
 
 def parse_cloth_type(description):
@@ -251,7 +149,7 @@ def get_weather(city_name=None, ip=None):
             city_name = city_resp.get("city", "北京")
 
         api_url = "http://apis.juhe.cn/simpleWeather/query"
-        api_key = "93273738eb385cccac845a7ccfb4ef8c"
+        api_key = current_app.config.get('WEATHER_API_KEY') or os.environ.get('WEATHER_API_KEY', '')
         params = {"key": api_key, "city": city_name}
         weather_resp = requests.get(api_url, params=params, timeout=6).json()
 
@@ -264,7 +162,7 @@ def get_weather(city_name=None, ip=None):
         # 确保天气状况是中文（API返回已为中文）
         return city_name, temp, condition
     except Exception as e:
-        print("[ERROR] 天气获取失败:", e)
+        logger.error("天气获取失败: %s", e)
         return city_name or "未知城市", 20, "晴朗"
 
 # 新增：根据天气和衣物类型生成穿搭建议
@@ -744,7 +642,7 @@ def get_weather_by_city():
         if not city_input:
             return jsonify({"success": False, "error": "未提供城市名称"}), 400
         city, temp, condition = get_weather(city_input, ip)
-        print(f"[INFO] 获取天气成功：{city} - {condition} {temp}℃")
+        logger.info("获取天气成功：%s - %s %s℃", city, condition, temp)
         return jsonify({
             "success": True, 
             "city": city, 
@@ -780,7 +678,7 @@ def recommendation():
         for folder in target_folders:
             if not os.path.exists(folder):
                 os.makedirs(folder, exist_ok=True)
-                print(f"[INFO] 文件夹不存在，已自动创建：{folder}")
+                logger.info("文件夹不存在，已自动创建：%s", folder)
 
         # 4. 收集所有有效图片
         image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp')
@@ -812,7 +710,7 @@ def recommendation():
 
     except Exception as e:
         error_msg = f"页面加载失败：{str(e)}"
-        print(f"[ERROR] {error_msg}")
+        logger.error(error_msg)
         traceback.print_exc()
         return render_template('error.html', message=error_msg), 500
     
@@ -889,7 +787,7 @@ def import_local_images():
                 dest_path = os.path.join(dest_folder, filename)
 
                 if os.path.exists(dest_path):
-                    print(f"[INFO] 图片已存在，已跳过：{filename}")
+                    logger.info("图片已存在，已跳过：%s", filename)
                     skipped_count += 1
                     continue
 
@@ -898,12 +796,12 @@ def import_local_images():
                     f_dest.write(f_src.read())
                 
                 imported_count += 1
-                print(f"[INFO] 图片导入成功：{filename}（源路径：{img_path}）")
+                logger.info("图片导入成功：%s（源路径：%s）", filename, img_path)
 
             except Exception as e:
                 error_msg = f"文件名：{os.path.basename(img_path)}，错误：{str(e)}"
                 failed_list.append(error_msg)
-                print(f"[ERROR] 图片导入失败：{error_msg}")
+                logger.error("图片导入失败：%s", error_msg)
                 continue
 
         # 7. 生成纯中文结果响应

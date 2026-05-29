@@ -1,59 +1,85 @@
-﻿<p align="center">
-  <img src="docs/assets/logo.svg" alt="云想衣裳 Logo" width="720"><br>
-  <img src="docs/assets/demo.gif" alt="功能演示动图" width="720">
-</p>
+# 云裳衣裳 — AI 时尚推荐平台
 
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/Flask-3.0%2B-000000?logo=flask&logoColor=white" alt="Flask">
-  <img src="https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch">
-  <img src="https://img.shields.io/badge/CLIP-%E2%9C%93-412991?logo=openai&logoColor=white" alt="OpenAI CLIP">
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker">
-</p>
+基于深度学习的智能时尚穿搭推荐系统，支持图片上传、AI 风格分析、天气感知推荐、知识库 RAG 和衣橱管理。
 
-<h2 align="center">AI 驱动的智能衣柜与穿搭推荐平台</h2>
-<p align="center">
-  上传衣物 → AI 自动标注 → 生成风格画像 → 获得个性化穿搭推荐<br>
-  全部本地运行，数据不离开你的电脑
-<br><a href="docs/API.md">API 文档</a> · <a href="docs/ARCHITECTURE.md">架构总览</a> · <a href="docs/DEPLOY.md">部署指南</a> · <a href="docs/FAQ.md">常见问题</a> · <a href="docs/SCREENSHOTS.md">功能截图</a>
-</p>
+## 技术栈
 
----
+| 层 | 技术选型 |
+|---|---------|
+| **后端框架** | Flask 3.x + Blueprint 模块化 |
+| **AI/ML** | CLIP (ViT-B/32) + BLIP + MobileNetV2 |
+| **LLM** | LangChain / LangGraph + Ollama / OpenAI API |
+| **向量检索** | ChromaDB + sentence-transformers |
+| **数据库** | MySQL + SQLAlchemy ORM |
+| **异步任务** | Celery + Redis |
+| **认证** | Flask-Login + Werkzeug 密码哈希 |
 
-## ✨ 核心功能
+## 项目结构
 
-| 模块 | 能力 | 技术栈 |
-|:---|:---|:---|
-| **智能衣柜** | 以图片和标签管理日常单品，批量导入 + 去重 | Flask + SQLAlchemy + CLIP |
-| **风格画像** | 分析衣柜单品，生成个人风格分布报告 | CLIP + 自训练分类器 |
-| **AI 推荐** | 结合图片相似度、天气与个人画像，推荐搭配方案 | CLIP + BLIP + 天气 API |
-| **图像搜索** | 用一张图片在图库中找到相似商品 | MobileNetV2 + cosine similarity |
-| **时尚顾问** | 用自然语言获得穿搭建议 | Ollama (本地 LLM) |
+```
+fashion_platform/
+├── app/
+│   ├── __init__.py              # Flask 工厂函数
+│   ├── models.py                # SQLAlchemy 数据模型
+│   ├── extensions.py            # Flask 扩展初始化
+│   ├── celery_app.py            # Celery 异步任务
+│   ├── main/                    # 主页路由
+│   ├── auth/                    # 用户认证
+│   ├── recommendation/          # 智能推荐引擎
+│   ├── search/                  # 商品搜索（文本+图片）
+│   ├── wardrobe/                # 衣橱管理
+│   ├── fashion_advisor/         # AI 穿搭顾问（Agent+RAG）
+│   ├── style_analysis/          # 风格分析
+│   ├── analytics/               # 用户行为分析
+│   └── services/                # 公共服务层
+│       ├── ai_service.py        # CLIP/BLIP 模型服务（单例）
+│       ├── weather_service.py   # 天气查询服务
+│       ├── vector_store.py      # ChromaDB 向量存储
+│       ├── image_utils.py       # 图像工具（颜色提取等）
+│       └── llm_observability.py # LLM 调用监控
+├── config/
+│   └── default.py               # 配置管理（环境变量 + Feature Flags）
+├── static/
+│   ├── images/products/         # 商品图库
+│   └── uploads/                 # 用户上传目录
+├── templates/                   # Jinja2 模板
+├── tests/                       # 测试
+├── logs/                        # 应用日志
+├── requirements.txt             # Python 依赖
+├── Dockerfile                   # 容器化
+└── docker-compose.yml           # 本地开发编排
+```
 
----
+## 核心架构
 
-## 🚀 快速开始
+```
+用户上传图片 → CLIP 特征提取 → 向量相似度搜索
+                                  ↓
+                          候选池（图库+衣橱）
+                                  ↓
+                  KMeans 颜色分析 + BLIP 描述生成
+                                  ↓
+              天气 API → 穿搭建议 + 用户画像 → 推荐理由
+                                  ↓
+              LangGraph Agent → RAG 知识库 → 结构化搭配方案
+```
 
-### 环境要求
+## 快速启动
+
+### 1. 环境要求
 
 - Python 3.10+
 - MySQL 8.0+
-- (可选) NVIDIA GPU + CUDA — 推理更快
-- (可选) [Ollama](https://ollama.ai) — 启用 AI 时尚顾问
-
-### 1. 克隆仓库
-
-```bash
-git clone https://github.com/yourname/yunxiangyishang.git
-cd yunxiangyishang
-```
+- Redis（可选，用于 Celery）
 
 ### 2. 安装依赖
 
 ```bash
+# 创建虚拟环境
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 安装依赖
 pip install -r requirements.txt
 ```
 
@@ -61,128 +87,61 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入你的 MySQL 密码等信息
+# 编辑 .env 填入你的配置
 ```
 
-### 4. 初始化数据库
+关键环境变量：
 
-```sql
-CREATE DATABASE fashion_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `SECRET_KEY` | Flask 密钥 | `your-secret-key` |
+| `MYSQL_HOST` | MySQL 地址 | `localhost` |
+| `MYSQL_PASSWORD` | MySQL 密码 | `your-password` |
+| `WEATHER_API_KEY` | 天气 API 密钥 | `your-key` |
+| `ADVISOR_LLM_PROVIDER` | LLM 后端 | `ollama` / `openai` |
+| `OLLAMA_MODEL` | Ollama 模型名 | `qwen2.5:3b` |
 
-首次运行时 Flask 会自动创建表和默认管理员账户（`admin` / `admin123`）。
-
-### 5. 下载 AI 模型
-
-项目使用 CLIP 和 BLIP 做图像理解。首次启动时会自动从 HuggingFace 下载到 `app/models/`，也可以手动放置：
+### 4. 启动
 
 ```bash
-# CLIP (OpenAI)
-git clone https://huggingface.co/openai/clip-vit-base-patch32 app/models/clip-vit-base-patch32
+# 开发模式
+flask run --debug
 
-# BLIP (Salesforce)
-git clone https://huggingface.co/Salesforce/blip-image-captioning-base app/models/blip-image-captioning-base
+# 或使用 Docker
+docker compose up -d
 ```
 
-### 6. 启动
+访问 `http://localhost:5000`。
+
+## Docker 部署
 
 ```bash
-python run.py
-# 访问 http://localhost:5000
+docker compose up -d
 ```
 
----
+服务列表：
+- `web`: Flask 应用 (端口 5000)
+- `mysql`: MySQL 8.0 (端口 3306)
+- `redis`: Redis (端口 6379)
 
-## 🐳 Docker 一键部署
+## Feature Flags
+
+在 `.env` 或 `config/default.py` 中控制功能开关：
+
+| Flag | 默认值 | 说明 |
+|------|--------|------|
+| `FEATURE_WEATHER_SERVICE` | `true` | 天气感知推荐 |
+| `FEATURE_ADVISOR_RAG` | `true` | RAG 知识库检索 |
+| `FEATURE_ADVISOR_AGENT` | `true` | Agent 编排模式 |
+| `FEATURE_ADVISOR_LANGGRAPH` | `false` | LangGraph 工作流 |
+| `FEATURE_ASYNC_INDEXING` | `false` | Celery 异步索引 |
+
+## 运行测试
 
 ```bash
-# 构建并启动所有服务
-docker-compose up --build
-
-# 后台运行
-docker-compose up -d
+pytest tests/ -v
 ```
 
-服务启动后访问 `http://localhost:5000`。
+## License
 
----
-
-## 📁 项目结构
-
-```
-yunxiangyishang/
-├── app/                      # Flask 应用主目录
-│   ├── __init__.py           # 应用工厂
-│   ├── models.py             # SQLAlchemy 模型
-│   ├── extensions.py         # Flask 扩展与工具函数
-│   ├── auth/                 # 认证（登录 / 注册 / 密码重置）
-│   ├── main/                 # 首页与账户管理
-│   ├── wardrobe/             # 智能衣柜 CRUD + 诊断
-│   ├── search/               # 商品搜索 + 图像搜索
-│   ├── recommendation/       # AI 穿搭推荐 + 天气
-│   ├── fashion_advisor/      # AI 时尚顾问（Ollama）
-│   ├── style_analysis/       # 风格画像分析
-│   ├── services/             # AI 服务层（CLIP / BLIP）
-│   └── models/               # 本地 AI 模型权重（.gitignore）
-├── config/                   # 配置（从 .env 读取）
-├── static/                   # 静态资源（CSS / JS / 图片）
-├── templates/                # Jinja2 模板
-├── tests/                    # 测试
-├── docs/                     # 文档与资源
-│   ├── API.md                # REST API 接口文档
-│   ├── ARCHITECTURE.md       # 架构总览与模块交互
-│   ├── DEPLOY.md             # 部署指南（本地/Docker/生产）
-│   ├── FAQ.md                # 常见问题解答
-│   └── SCREENSHOTS.md        # 功能截图展示
-├── .env.example              # 环境变量模板
-├── requirements.txt          # Python 依赖
-├── Dockerfile                # 容器镜像
-├── docker-compose.yml        # 编排配置
-├── LICENSE                   # MIT 许可证
-└── README.md                 # 本文件
-```
-
----
-
-## 🔒 安全说明
-
-- 所有敏感信息通过 `.env` 管理，已加入 `.gitignore`
-- 密码使用 `werkzeug` 安全哈希存储
-- 文件上传使用 UUID 重命名，防止路径穿越
-- 登录状态受 `flask-login` 保护，支持 `session_protection = "strong"`
-
----
-
-## 🗺️ 路线图
-
-- [ ] Celery 异步任务（特征提取 / 批量导入）
-- [ ] 购物车从 Session 迁移到数据库
-- [ ] 前端 SPA 改造（Vue / React）
-- [ ] 支持更多 LLM 后端（vLLM / llama.cpp）
-- [ ] 国际化（i18n）支持
-- [ ] 移动端适配优化
-- [ ] 多语言 UI（中文 / 英文）
-
----
-
-## 🤝 参与贡献
-
-欢迎所有形式的贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
-
-1. Fork 本仓库
-2. 创建特性分支（`git checkout -b feature/amazing-feature`）
-3. 提交更改（`git commit -m 'Add amazing feature'`）
-4. 推送到分支（`git push origin feature/amazing-feature`）
-5. 发起 Pull Request
-
----
-
-## 📄 许可证
-
-本项目基于 [MIT License](LICENSE) 开源，欢迎自由使用、修改和分发。
-
----
-
-<p align="center">
-  <sub>Built with ❤️ by the 云想衣裳 community</sub>
-</p>
+MIT

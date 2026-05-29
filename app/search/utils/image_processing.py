@@ -1,7 +1,10 @@
+import logging
 import cv2
 import numpy as np
 from PIL import Image
 import io
+
+logger = logging.getLogger(__name__)
 
 
 def preprocess_image(image_data):
@@ -22,7 +25,7 @@ def preprocess_image(image_data):
 
         return img
     except Exception as e:
-        print(f"图片预处理错误: {e}")
+        logger.error("图片预处理错误: %s", e)
         return None
 
 
@@ -47,5 +50,5 @@ def extract_color_histogram(image):
 
         return histogram
     except Exception as e:
-        print(f"颜色特征提取错误: {e}")
+        logger.error("颜色特征提取错误: %s", e)
         return None

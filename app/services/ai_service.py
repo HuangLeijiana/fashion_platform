@@ -1,4 +1,5 @@
 import os
+import logging
 import torch
 import clip
 from PIL import Image
@@ -7,9 +8,12 @@ import cv2
 import numpy as np
 from flask import current_app
 
+logger = logging.getLogger(__name__)
+
+
 class AIService:
     _instance = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(AIService, cls).__new__(cls)
@@ -25,7 +29,7 @@ class AIService:
         if self.initialized:
             return
             
-        print("[AI Service] 初始化模型...")
+        logger.info("初始化模型...")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         # 1. 加载 BLIP
@@ -48,22 +52,22 @@ class AIService:
                     checkpoint = torch.load(model_path, map_location=self.device)
                     state_dict = checkpoint.get("blip_model", checkpoint)
                     self.blip_model.load_state_dict(state_dict, strict=False)
-                    print("[AI Service] ✅ 加载 BLIP 微调权重成功")
+                    logger.info("加载 BLIP 微调权重成功")
                 
                 self.blip_model.eval()
             else:
-                print(f"[AI Service] ⚠️ BLIP 模型路径不存在: {self.local_blip_path}")
+                logger.warning("BLIP 模型路径不存在: %s", self.local_blip_path)
         except Exception as e:
-            print(f"[AI Service] ❌ BLIP 加载失败: {e}")
+            logger.error("BLIP 加载失败: %s", e)
 
         # 2. 加载 CLIP
         self.clip_model = None
         self.clip_preprocess = None
         try:
             self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
-            print("[AI Service] ✅ CLIP 模型加载成功")
+            logger.info("CLIP 模型加载成功")
         except Exception as e:
-            print(f"[AI Service] ❌ CLIP 加载失败: {e}")
+            logger.error("CLIP 加载失败: %s", e)
             
         self.initialized = True
 
@@ -82,7 +86,7 @@ class AIService:
             caption = self.blip_processor.decode(out[0], skip_special_tokens=True)
             return caption
         except Exception as e:
-            print(f"[AI Service] Caption 生成失败: {e}")
+            logger.error("Caption 生成失败: %s", e)
             return "Error generating caption"
 
     def extract_clip_features(self, image_path):
@@ -99,7 +103,7 @@ class AIService:
                 features = self.clip_model.encode_image(image)
             return features.cpu().numpy().flatten()
         except Exception as e:
-            print(f"[AI Service] CLIP 特征提取失败: {e}")
+            logger.error("CLIP 特征提取失败: %s", e)
             return np.zeros(512)
 
     def analyze_image_attributes(self, image_path):
@@ -171,7 +175,7 @@ class AIService:
                     detected_style = predicted_style
                     
             except Exception as e:
-                print(f"[AI Service] CLIP 风格分类失败: {e}")
+                logger.error("CLIP 风格分类失败: %s", e)
                 # 回退到关键词匹配
                 styles = {
                     "vintage": "复古", "casual": "休闲", "formal": "正式", "business": "商务",
@@ -250,7 +254,7 @@ class AIService:
                     if "中式风" not in additional_tags:
                         additional_tags.insert(0, "中式风")
             except Exception as e:
-                print(f"[AI Service] CLIP 分类细分失败: {e}")
+                logger.error("CLIP 分类细分失败: %s", e)
                 # 回退到关键词逻辑...
                 pass
         
@@ -319,7 +323,7 @@ class AIService:
             # 转十六进制字符串
             return hex(int(phash, 2))[2:].rjust(16, '0')
         except Exception as e:
-            print(f"[AI Service] pHash 计算失败: {e}")
+            logger.error("pHash 计算失败: %s", e)
             return None
 
 # 全局单例

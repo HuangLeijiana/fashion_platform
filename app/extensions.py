@@ -1,7 +1,6 @@
 # app/extensions.py
 import os
 import logging
-import mysql.connector
 from werkzeug.utils import secure_filename
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
@@ -22,24 +21,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_file(filename):
     """验证文件是否符合上传格式"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def get_db_connection():
-    """创建原生MySQL数据库连接（用于需要原生连接的场景，逐步迁移到ORM）"""
-    try:
-        conn = mysql.connector.connect(
-            host=current_app.config['MYSQL_HOST'],
-            user=current_app.config['MYSQL_USER'],
-            password=current_app.config['MYSQL_PASSWORD'],
-            database=current_app.config['MYSQL_DATABASE'],
-            port=current_app.config['MYSQL_PORT'],
-            charset='utf8mb4',
-            collation='utf8mb4_unicode_ci'
-        )
-        return conn
-    except mysql.connector.Error as e:
-        logger.error("数据库连接错误: %s", e)
-        return None
 
 
 def save_uploaded_file(file, subfolder=''):

@@ -16,13 +16,37 @@ def create_app(config_class=None):
     app = Flask(__name__, template_folder=template_dir, static_folder='../static')
     app.config.from_object(config_class)
 
+    # Swagger/OpenAPI 配置
+    app.config['SWAGGER'] = {
+        'title': '云裳衣裳 API',
+        'uiversion': 3,
+        'openapi': '3.0.3',
+        'specs_route': '/api/docs/',
+    }
+
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     from .extensions import db, login_manager, mail
     from . import models  # noqa: F401
+    from flasgger import Swagger
 
     db.init_app(app)
     mail.init_app(app)
+
+    # 初始化 Swagger/OpenAPI 文档
+    swagger_config = {
+        'headers': [],
+        'specs': [{
+            'endpoint': 'apispec',
+            'route': '/apispec.json',
+            'rule_filter': lambda rule: True,
+            'model_filter': lambda tag: True,
+        }],
+        'static_url_path': '/flasgger_static',
+        'swagger_ui': True,
+        'specs_route': '/api/docs/',
+    }
+    Swagger(app, template_file='../docs/openapi.yml', config=swagger_config)
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'

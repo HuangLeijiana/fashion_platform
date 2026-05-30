@@ -1,0 +1,14 @@
+# Testing
+pytest==8.4.2
+pytest-cov==6.2.1
+pytest-timeout==2.3.1
+
+# Linting & formatting
+ruff==0.12.10
+
+# Type checking
+mypy==1.15.0
+
+# Security scanning
+bandit==1.8.4
+safety==3.3.2

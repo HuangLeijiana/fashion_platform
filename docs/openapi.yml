@@ -1,0 +1,753 @@
+openapi: "3.0.3"
+info:
+  title: 云裳衣裳 — 时尚推荐平台 API
+  description: |
+    AI 驱动的智能时尚穿搭推荐平台。支持图片上传、CLIP 风格分析、
+    天气感知推荐、知识库 RAG 对话和衣橱管理。
+  version: "1.0.0"
+  contact:
+    name: Fashion Platform Team
+    url: https://github.com/your-org/fashion-platform
+
+servers:
+  - url: http://localhost:5000
+    description: 本地开发服务器
+
+tags:
+  - name: Auth
+    description: 用户认证相关接口
+  - name: Recommendation
+    description: AI 时尚推荐引擎（上传、CLIP 匹配、天气感知）
+  - name: Wardrobe
+    description: 衣橱管理（增删改查、批量导入、智能诊断）
+  - name: Search
+    description: 商品搜索（文本搜索、图片搜索、购物车）
+  - name: Fashion Advisor
+    description: LLM 时尚顾问对话（流式/非流式、风格方案生成）
+  - name: Analytics
+    description: 用户行为埋点
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "错误描述"
+      required: [success, error]
+
+    UploadResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        username:
+          type: string
+        image_url:
+          type: string
+        local_path:
+          type: string
+        filename:
+          type: string
+        description:
+          type: string
+          description: 纯中文图片描述
+        color:
+          type: string
+          description: 主色调（中文）
+        style_tag:
+          type: string
+          description: 风格标签（中文）
+        cloth_type:
+          type: string
+          description: 衣物类型（中文）
+
+    RecommendItem:
+      type: object
+      properties:
+        image_url:
+          type: string
+        similarity:
+          type: number
+        color:
+          type: string
+        description:
+          type: string
+        style_tag:
+          type: string
+        cloth_type:
+          type: string
+        weather_suggestion:
+          type: string
+        is_wardrobe:
+          type: boolean
+        wardrobe_item_id:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+          description: 推荐理由（结合用户画像 + 天气）
+
+    RecommendResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        city:
+          type: string
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendItem"
+        used_wardrobe:
+          type: boolean
+
+    WeatherInfo:
+      type: object
+      properties:
+        success:
+          type: boolean
+        city:
+          type: string
+        temperature:
+          type: number
+        condition:
+          type: string
+          description: 天气状况（中文）
+        suggestion:
+          type: string
+          description: 穿搭建议
+
+    ClothingItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        subcategory:
+          type: string
+        color:
+          type: string
+        brand:
+          type: string
+        season:
+          type: string
+        occasion:
+          type: string
+        material:
+          type: string
+        image_path:
+          type: string
+        style_tags:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WardrobeDiagnosis:
+      type: object
+      properties:
+        success:
+          type: boolean
+        total_items:
+          type: integer
+        color_distribution:
+          type: object
+        category_distribution:
+          type: object
+        style_distribution:
+          type: object
+        suggestions:
+          type: array
+          items:
+            type: string
+        outfit_combos:
+          type: array
+          items:
+            type: object
+
+    CartItem:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: integer
+        image:
+          type: string
+
+    AdvisorRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: 用户的自然语言消息
+        include_context:
+          type: boolean
+          default: true
+      required: [message]
+
+    AdvisorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        response:
+          type: string
+        tokens_used:
+          type: integer
+
+    StylePlanRequest:
+      type: object
+      properties:
+        image_path:
+          type: string
+          description: 上传图片的服务端路径
+        weather:
+          type: string
+        occasion:
+          type: string
+        preferences:
+          type: array
+          items:
+            type: string
+      required: [image_path]
+
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Flask-Login session cookie
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 需要登录
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+paths:
+  # ==================== Auth ====================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 用户注册
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+              required: [username, email, password]
+      responses:
+        "200":
+          description: 注册成功
+        "400":
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 用户登录
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        "200":
+          description: 登录成功
+        "401":
+          description: 认证失败
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: 获取当前用户信息
+      operationId: getCurrentUser
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 当前用户 JSON
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 退出登录 (API)
+      operationId: apiLogout
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 退出成功
+
+  # ==================== Recommendation ====================
+  /recommendation/upload:
+    post:
+      tags: [Recommendation]
+      summary: 上传衣物图片
+      description: 上传一张衣物图片，自动提取颜色、风格标签和类型描述
+      operationId: uploadCloth
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                cloth_image:
+                  type: string
+                  format: binary
+                username:
+                  type: string
+                style:
+                  type: string
+              required: [cloth_image]
+      responses:
+        "200":
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /recommendation/ai_recommend:
+    post:
+      tags: [Recommendation]
+      summary: AI 穿搭推荐
+      description: |
+        基于 CLIP 余弦相似度的 AI 推荐引擎：
+        1. 提取上传图片的 CLIP 特征向量
+        2. 与本地图库 + 衣柜物品计算相似度
+        3. 结合天气和用户画像生成推荐理由
+      operationId: aiRecommend
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                local_path:
+                  type: string
+                  description: 上传图片的服务端绝对路径
+                city:
+                  type: string
+                  description: 城市名称
+                include_wardrobe:
+                  type: boolean
+                  default: false
+                  description: 是否包含衣柜物品
+                user_profile:
+                  type: object
+                  properties:
+                    height:
+                      type: number
+                    weight:
+                      type: number
+                    age:
+                      type: integer
+                    gender:
+                      type: string
+                    body_shape:
+                      type: string
+                    skin_tone:
+                      type: string
+                    style_pref:
+                      type: array
+                      items:
+                        type: string
+              required: [local_path]
+      responses:
+        "200":
+          description: 推荐结果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendResponse"
+
+  /recommendation/weather:
+    post:
+      tags: [Recommendation]
+      summary: 获取城市天气
+      operationId: getWeather
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                city:
+                  type: string
+              required: [city]
+      responses:
+        "200":
+          description: 天气信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeatherInfo"
+
+  # ==================== Wardrobe ====================
+  /wardrobe/api/items:
+    get:
+      tags: [Wardrobe]
+      summary: 获取衣橱所有物品
+      operationId: getWardrobeItems
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 物品列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ClothingItem"
+
+  /wardrobe/add:
+    post:
+      tags: [Wardrobe]
+      summary: 添加衣物
+      operationId: addClothing
+      security:
+        - sessionAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                category:
+                  type: string
+                color:
+                  type: string
+                brand:
+                  type: string
+                season:
+                  type: string
+                occasion:
+                  type: string
+                material:
+                  type: string
+                style_tags:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+              required: [name, category]
+      responses:
+        "200":
+          description: 添加成功
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /wardrobe/delete/{item_id}:
+    post:
+      tags: [Wardrobe]
+      summary: 删除衣物
+      operationId: deleteClothing
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 删除成功
+
+  /wardrobe/update/{item_id}:
+    post:
+      tags: [Wardrobe]
+      summary: 更新衣物信息
+      operationId: updateClothing
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 更新成功
+
+  /wardrobe/smart_search:
+    get:
+      tags: [Wardrobe]
+      summary: 智能搜索衣橱
+      operationId: smartSearch
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: 关键词
+      responses:
+        "200":
+          description: 搜索结果
+
+  /wardrobe/diagnosis:
+    get:
+      tags: [Wardrobe]
+      summary: 衣橱诊断分析
+      operationId: wardrobeDiagnosis
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 诊断报告
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WardrobeDiagnosis"
+
+  /wardrobe/batch_add:
+    post:
+      tags: [Wardrobe]
+      summary: 批量导入衣物
+      description: 从本地文件夹批量导入图片，AI 自动分类并去重
+      operationId: batchAddClothing
+      security:
+        - sessionAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder_path:
+                  type: string
+              required: [folder_path]
+      responses:
+        "200":
+          description: 批量导入结果
+
+  # ==================== Search ====================
+  /search/api/suggestions:
+    get:
+      tags: [Search]
+      summary: 搜索建议/自动补全
+      operationId: searchSuggestions
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 建议列表
+
+  /search/api/search_by_image:
+    post:
+      tags: [Search]
+      summary: 以图搜图
+      operationId: searchByImage
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                image_data:
+                  type: string
+                  description: Base64 编码的图片数据
+      responses:
+        "200":
+          description: 搜索结果
+
+  /search/api/add_to_cart:
+    post:
+      tags: [Search]
+      summary: 添加到购物车
+      operationId: addToCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  default: 1
+              required: [product_id]
+      responses:
+        "200":
+          description: 添加成功
+
+  /search/api/get_search_history:
+    get:
+      tags: [Search]
+      summary: 获取搜索历史
+      operationId: getSearchHistory
+      responses:
+        "200":
+          description: 历史记录列表
+
+  # ==================== Fashion Advisor ====================
+  /fashion-advisor/api/health:
+    get:
+      tags: [Fashion Advisor]
+      summary: 健康检查
+      operationId: advisorHealthCheck
+      responses:
+        "200":
+          description: 服务正常
+
+  /fashion-advisor/api/advice:
+    post:
+      tags: [Fashion Advisor]
+      summary: 获取时尚建议（非流式）
+      operationId: getAdvice
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdvisorRequest"
+      responses:
+        "200":
+          description: 时尚建议
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvisorResponse"
+
+  /fashion-advisor/api/style-plan:
+    post:
+      tags: [Fashion Advisor]
+      summary: 生成风格方案
+      operationId: generateStylePlan
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StylePlanRequest"
+      responses:
+        "200":
+          description: 风格方案
+
+  /fashion-advisor/api/diagnosis:
+    get:
+      tags: [Fashion Advisor]
+      summary: 衣橱顾问诊断
+      operationId: advisorDiagnosis
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 顾问诊断报告
+
+  /fashion-advisor/api/reset:
+    post:
+      tags: [Fashion Advisor]
+      summary: 重置对话状态
+      operationId: resetConversation
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: 已重置
+
+  # ==================== Analytics ====================
+  /analytics/track:
+    post:
+      tags: [Analytics]
+      summary: 埋点事件上报
+      operationId: trackEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                data:
+                  type: object
+              required: [event]
+      responses:
+        "200":
+          description: 已记录
+
+

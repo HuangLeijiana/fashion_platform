@@ -1,1 +1,1 @@
-﻿from app.main.views import main_bp
+from app.main.views import main_bp

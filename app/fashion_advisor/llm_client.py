@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import re
 import time
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Generator
+from typing import Any
 
 import requests
 from flask import current_app, has_app_context
@@ -29,7 +30,9 @@ class AdvisorLLMClient:
         self.model = config.get("ADVISOR_LLM_MODEL", "qwen2.5:3b")
         self.ollama_host = config.get("ADVISOR_OLLAMA_HOST", "http://localhost:11434").rstrip("/")
         self.openai_api_key = config.get("ADVISOR_OPENAI_API_KEY", "")
-        self.openai_base_url = config.get("ADVISOR_OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+        self.openai_base_url = config.get(
+            "ADVISOR_OPENAI_BASE_URL", "https://api.openai.com/v1"
+        ).rstrip("/")
 
     def health(self) -> dict[str, Any]:
         provider = self._select_provider()
@@ -47,13 +50,17 @@ class AdvisorLLMClient:
         except requests.RequestException:
             return {"provider": "ollama", "model": self.model, "available": False}
 
-    def generate_text(self, system_prompt: str, user_prompt: str, temperature: float = 0.4) -> LLMResult | None:
+    def generate_text(
+        self, system_prompt: str, user_prompt: str, temperature: float = 0.4
+    ) -> LLMResult | None:
         provider = self._select_provider()
         if provider == "openai":
             return self._generate_openai(system_prompt, user_prompt, temperature)
         return self._generate_ollama(system_prompt, user_prompt, temperature)
 
-    def generate_json(self, system_prompt: str, user_prompt: str, temperature: float = 0.3) -> dict[str, Any] | None:
+    def generate_json(
+        self, system_prompt: str, user_prompt: str, temperature: float = 0.3
+    ) -> dict[str, Any] | None:
         result = self.generate_text(system_prompt, user_prompt, temperature=temperature)
         if result is None:
             return None
@@ -62,7 +69,9 @@ class AdvisorLLMClient:
             return None
         return payload
 
-    def generate_stream(self, system_prompt: str, user_prompt: str, temperature: float = 0.5) -> Generator[str, None, None]:
+    def generate_stream(
+        self, system_prompt: str, user_prompt: str, temperature: float = 0.5
+    ) -> Generator[str, None, None]:
         provider = self._select_provider()
         provider_name = "openai-compatible" if provider == "openai" else "ollama"
         started_at = time.time()
@@ -97,7 +106,9 @@ class AdvisorLLMClient:
             return "openai"
         return "ollama"
 
-    def _generate_ollama(self, system_prompt: str, user_prompt: str, temperature: float) -> LLMResult | None:
+    def _generate_ollama(
+        self, system_prompt: str, user_prompt: str, temperature: float
+    ) -> LLMResult | None:
         started_at = time.time()
         prompt_text = system_prompt + "\n" + user_prompt
         try:
@@ -127,7 +138,9 @@ class AdvisorLLMClient:
                 response_text=content,
                 success=True,
             )
-            return LLMResult(provider="ollama", model=self.model, content=content, metadata=metadata)
+            return LLMResult(
+                provider="ollama", model=self.model, content=content, metadata=metadata
+            )
         except requests.RequestException:
             llm_observability.record(
                 provider="ollama",
@@ -139,7 +152,9 @@ class AdvisorLLMClient:
             )
             return None
 
-    def _generate_openai(self, system_prompt: str, user_prompt: str, temperature: float) -> LLMResult | None:
+    def _generate_openai(
+        self, system_prompt: str, user_prompt: str, temperature: float
+    ) -> LLMResult | None:
         started_at = time.time()
         prompt_text = system_prompt + "\n" + user_prompt
         headers = {
@@ -175,7 +190,9 @@ class AdvisorLLMClient:
                 response_text=content,
                 success=True,
             )
-            return LLMResult(provider="openai-compatible", model=self.model, content=content, metadata=metadata)
+            return LLMResult(
+                provider="openai-compatible", model=self.model, content=content, metadata=metadata
+            )
         except (requests.RequestException, KeyError, IndexError, TypeError):
             llm_observability.record(
                 provider="openai-compatible",
@@ -187,7 +204,9 @@ class AdvisorLLMClient:
             )
             return None
 
-    def _generate_ollama_stream(self, system_prompt: str, user_prompt: str, temperature: float) -> Generator[str, None, None]:
+    def _generate_ollama_stream(
+        self, system_prompt: str, user_prompt: str, temperature: float
+    ) -> Generator[str, None, None]:
         try:
             response = requests.post(
                 f"{self.ollama_host}/api/chat",
@@ -219,7 +238,9 @@ class AdvisorLLMClient:
         except requests.RequestException:
             return
 
-    def _generate_openai_stream(self, system_prompt: str, user_prompt: str, temperature: float) -> Generator[str, None, None]:
+    def _generate_openai_stream(
+        self, system_prompt: str, user_prompt: str, temperature: float
+    ) -> Generator[str, None, None]:
         headers = {
             "Authorization": f"Bearer {self.openai_api_key}",
             "Content-Type": "application/json",

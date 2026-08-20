@@ -3,11 +3,9 @@
 import os
 import tempfile
 
-import pytest
-import numpy as np
 from PIL import Image
 
-from app.services.image_utils import extract_dominant_color, _classify_hsv
+from app.services.image_utils import _classify_hsv, extract_dominant_color
 
 
 class TestExtractDominantColor:

@@ -1,8 +1,8 @@
 """图像分析模块：基于规则和颜色的服装图片描述与标签解析。"""
 
+import logging
 import os
 import random
-import logging
 
 from app.services.image_utils import extract_dominant_color
 
@@ -38,10 +38,18 @@ def image_to_description(image_path: str, user_style: str | None = None) -> str:
 
         # 3. 基于颜色和类型生成描述
         color_descriptions = {
-            "黑色": "经典黑色", "白色": "纯净白色", "红色": "热情红色",
-            "蓝色": "沉稳蓝色", "绿色": "清新绿色", "黄色": "明亮黄色",
-            "粉色": "温柔粉色", "紫色": "神秘紫色", "灰色": "高级灰色",
-            "棕色": "复古棕色", "橙色": "活力橙色", "其他": "时尚",
+            "黑色": "经典黑色",
+            "白色": "纯净白色",
+            "红色": "热情红色",
+            "蓝色": "沉稳蓝色",
+            "绿色": "清新绿色",
+            "黄色": "明亮黄色",
+            "粉色": "温柔粉色",
+            "紫色": "神秘紫色",
+            "灰色": "高级灰色",
+            "棕色": "复古棕色",
+            "橙色": "活力橙色",
+            "其他": "时尚",
         }
 
         color_desc = color_descriptions.get(dominant_color, "时尚")
@@ -51,10 +59,17 @@ def image_to_description(image_path: str, user_style: str | None = None) -> str:
             style = user_style
         else:
             style_keywords = {
-                "黑色": "简约风", "白色": "清新风", "红色": "活力风",
-                "蓝色": "休闲风", "绿色": "自然风", "黄色": "阳光风",
-                "粉色": "甜美风", "紫色": "优雅风", "灰色": "商务风",
-                "棕色": "复古风", "橙色": "运动风",
+                "黑色": "简约风",
+                "白色": "清新风",
+                "红色": "活力风",
+                "蓝色": "休闲风",
+                "绿色": "自然风",
+                "黄色": "阳光风",
+                "粉色": "甜美风",
+                "紫色": "优雅风",
+                "灰色": "商务风",
+                "棕色": "复古风",
+                "橙色": "运动风",
             }
             style = style_keywords.get(dominant_color, "潮流风")
 

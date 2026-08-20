@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from typing import Any
 
-import torch
 import clip
 import cv2
 import numpy as np
+import torch
 from PIL import Image
-from flask import current_app
-from transformers import BlipProcessor, BlipForConditionalGeneration
+from transformers import BlipForConditionalGeneration, BlipProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class AIService:
 
     def __new__(cls) -> AIService:
         if cls._instance is None:
-            cls._instance = super(AIService, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.initialized = False
             cls._instance.clip_model = None
             cls._instance.blip_model = None
@@ -61,32 +60,22 @@ class AIService:
 
         try:
             if os.path.exists(self.local_blip_path):
-                self.blip_processor = BlipProcessor.from_pretrained(
+                self.blip_processor = BlipProcessor.from_pretrained(self.local_blip_path)
+                self.blip_model = BlipForConditionalGeneration.from_pretrained(
                     self.local_blip_path
-                )
-                self.blip_model = (
-                    BlipForConditionalGeneration.from_pretrained(
-                        self.local_blip_path
-                    ).to(self.device)
-                )
+                ).to(self.device)
 
                 # 尝试加载自定义微调权重
-                model_path = os.path.join(
-                    project_root, "app", "checkpoints", "fashion_model.pth"
-                )
+                model_path = os.path.join(project_root, "app", "checkpoints", "fashion_model.pth")
                 if os.path.exists(model_path):
-                    checkpoint: dict[str, Any] = torch.load(
-                        model_path, map_location=self.device
-                    )
+                    checkpoint: dict[str, Any] = torch.load(model_path, map_location=self.device)
                     state_dict = checkpoint.get("blip_model", checkpoint)
                     self.blip_model.load_state_dict(state_dict, strict=False)
                     logger.info("加载 BLIP 微调权重成功")
 
                 self.blip_model.eval()
             else:
-                logger.warning(
-                    "BLIP 模型路径不存在: %s", self.local_blip_path
-                )
+                logger.warning("BLIP 模型路径不存在: %s", self.local_blip_path)
         except Exception as e:
             logger.error("BLIP 加载失败: %s", e)
 
@@ -94,9 +83,7 @@ class AIService:
         self.clip_model = None
         self.clip_preprocess = None
         try:
-            self.clip_model, self.clip_preprocess = clip.load(
-                "ViT-B/32", device=self.device
-            )
+            self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
             logger.info("CLIP 模型加载成功")
         except Exception as e:
             logger.error("CLIP 加载失败: %s", e)
@@ -113,13 +100,9 @@ class AIService:
 
         try:
             raw_image = Image.open(image_path).convert("RGB")
-            inputs = self.blip_processor(raw_image, return_tensors="pt").to(
-                self.device
-            )
+            inputs = self.blip_processor(raw_image, return_tensors="pt").to(self.device)
             out = self.blip_model.generate(**inputs, max_new_tokens=50)
-            caption: str = self.blip_processor.decode(
-                out[0], skip_special_tokens=True
-            )
+            caption: str = self.blip_processor.decode(out[0], skip_special_tokens=True)
             return caption
         except Exception as e:
             logger.error("Caption 生成失败: %s", e)
@@ -134,11 +117,7 @@ class AIService:
             return np.zeros(512)
 
         try:
-            image = (
-                self.clip_preprocess(Image.open(image_path))
-                .unsqueeze(0)
-                .to(self.device)
-            )
+            image = self.clip_preprocess(Image.open(image_path)).unsqueeze(0).to(self.device)
             with torch.no_grad():
                 features = self.clip_model.encode_image(image)
             return features.cpu().numpy().flatten()
@@ -146,9 +125,7 @@ class AIService:
             logger.error("CLIP 特征提取失败: %s", e)
             return np.zeros(512)
 
-    def analyze_image_attributes(
-        self, image_path: str
-    ) -> dict[str, Any]:
+    def analyze_image_attributes(self, image_path: str) -> dict[str, Any]:
         """综合分析：提取材质、风格、分类、颜色。
 
         Returns:
@@ -158,10 +135,12 @@ class AIService:
 
         # 1. 材质提取
         materials: dict[str, str] = {
-            "denim": "牛仔", "jeans": "牛仔",
+            "denim": "牛仔",
+            "jeans": "牛仔",
             "cotton": "棉",
             "silk": "丝绸",
-            "wool": "羊毛", "knitted": "针织",
+            "wool": "羊毛",
+            "knitted": "针织",
             "leather": "皮革",
             "polyester": "聚酯纤维",
             "linen": "亚麻",
@@ -179,8 +158,12 @@ class AIService:
 
         style_classes: dict[str, list[str]] = {
             "新中式": [
-                "chinese traditional clothing", "qipao dress",
-                "cheongsam", "hanfu", "oriental style", "chinese embroidery",
+                "chinese traditional clothing",
+                "qipao dress",
+                "cheongsam",
+                "hanfu",
+                "oriental style",
+                "chinese embroidery",
             ],
             "商务": ["business suit", "formal office wear", "blazer", "white shirt"],
             "休闲": ["casual t-shirt", "jeans", "daily wear", "hoodie"],
@@ -201,18 +184,12 @@ class AIService:
 
         if self.clip_model:
             try:
-                image = (
-                    self.clip_preprocess(Image.open(image_path))
-                    .unsqueeze(0)
-                    .to(self.device)
-                )
+                image = self.clip_preprocess(Image.open(image_path)).unsqueeze(0).to(self.device)
                 text = clip.tokenize(flat_prompts).to(self.device)
 
                 with torch.no_grad():
                     logits_per_image, _ = self.clip_model(image, text)
-                    probs = (
-                        logits_per_image.softmax(dim=-1).cpu().numpy()[0]
-                    )
+                    probs = logits_per_image.softmax(dim=-1).cpu().numpy()[0]
 
                 top_idx = int(np.argmax(probs))
                 top_score = float(probs[top_idx])
@@ -234,9 +211,12 @@ class AIService:
             additional_tags.append("国潮")
 
         regional_keywords: dict[str, str] = {
-            "minority": "少数民族", "ethnic": "少数民族",
-            "batik": "蜡染", "tie-dye": "扎染",
-            "embroidery": "刺绣", "totem": "图腾",
+            "minority": "少数民族",
+            "ethnic": "少数民族",
+            "batik": "蜡染",
+            "tie-dye": "扎染",
+            "embroidery": "刺绣",
+            "totem": "图腾",
         }
         for en, cn in regional_keywords.items():
             if en in caption:
@@ -251,10 +231,17 @@ class AIService:
 
         # 5. 颜色提取
         color_map: dict[str, str] = {
-            "red": "红色", "blue": "蓝色", "green": "绿色",
-            "black": "黑色", "white": "白色", "yellow": "黄色",
-            "pink": "粉色", "purple": "紫色",
-            "grey": "灰色", "gray": "灰色", "brown": "棕色",
+            "red": "红色",
+            "blue": "蓝色",
+            "green": "绿色",
+            "black": "黑色",
+            "white": "白色",
+            "yellow": "黄色",
+            "pink": "粉色",
+            "purple": "紫色",
+            "grey": "灰色",
+            "gray": "灰色",
+            "brown": "棕色",
             "orange": "橙色",
         }
         detected_color = "其他"
@@ -311,9 +298,14 @@ class AIService:
 def _keyword_style_fallback(caption: str) -> str:
     """基于关键词的风格回退匹配。"""
     styles: dict[str, str] = {
-        "vintage": "复古", "casual": "休闲", "formal": "正式",
-        "business": "商务", "sport": "运动",
-        "chinese": "新中式", "traditional": "新中式", "qipao": "新中式",
+        "vintage": "复古",
+        "casual": "休闲",
+        "formal": "正式",
+        "business": "商务",
+        "sport": "运动",
+        "chinese": "新中式",
+        "traditional": "新中式",
+        "qipao": "新中式",
     }
     for en, cn in styles.items():
         if en in caption:
@@ -350,18 +342,12 @@ def _classify_category(
                     cat_prompts.append(f"a photo of {p}")
                     cat_map.append(cat_name)
 
-            image = (
-                service.clip_preprocess(Image.open(image_path))
-                .unsqueeze(0)
-                .to(service.device)
-            )
+            image = service.clip_preprocess(Image.open(image_path)).unsqueeze(0).to(service.device)
             text = clip.tokenize(cat_prompts).to(service.device)
 
             with torch.no_grad():
                 logits_per_image, _ = service.clip_model(image, text)
-                probs = (
-                    logits_per_image.softmax(dim=-1).cpu().numpy()[0]
-                )
+                probs = logits_per_image.softmax(dim=-1).cpu().numpy()[0]
 
             top_idx = int(np.argmax(probs))
             detected_category = cat_map[top_idx]
@@ -376,18 +362,31 @@ def _classify_category(
 
     if detected_category == "未分类":
         keyword_categories: dict[str, str] = {
-            "qipao": "旗袍", "cheongsam": "旗袍",
+            "qipao": "旗袍",
+            "cheongsam": "旗袍",
             "hanfu": "汉服",
-            "dress": "连衣裙", "gown": "连衣裙",
-            "shirt": "上衣", "blouse": "上衣", "top": "上衣",
+            "dress": "连衣裙",
+            "gown": "连衣裙",
+            "shirt": "上衣",
+            "blouse": "上衣",
+            "top": "上衣",
             "t-shirt": "上衣",
-            "pants": "下装", "trousers": "下装", "jeans": "下装",
+            "pants": "下装",
+            "trousers": "下装",
+            "jeans": "下装",
             "skirt": "下装",
-            "shoe": "鞋履", "sneaker": "鞋履", "boot": "鞋履",
+            "shoe": "鞋履",
+            "sneaker": "鞋履",
+            "boot": "鞋履",
             "sandal": "鞋履",
-            "jacket": "上衣", "coat": "上衣", "blazer": "上衣",
-            "bag": "配饰", "handbag": "配饰", "backpack": "配饰",
-            "hat": "配饰", "scarf": "配饰",
+            "jacket": "上衣",
+            "coat": "上衣",
+            "blazer": "上衣",
+            "bag": "配饰",
+            "handbag": "配饰",
+            "backpack": "配饰",
+            "hat": "配饰",
+            "scarf": "配饰",
         }
         for en, cn in keyword_categories.items():
             if en in caption:

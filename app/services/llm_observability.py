@@ -28,7 +28,7 @@ class LLMTrace:
 
 class LLMObservability:
     def __init__(self, log_path: str | None = None) -> None:
-        self.log_path = Path(log_path or os.path.join('logs', 'llm_metrics.log'))
+        self.log_path = Path(log_path or os.path.join("logs", "llm_metrics.log"))
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
@@ -39,11 +39,20 @@ class LLMObservability:
 
     @staticmethod
     def estimate_cost(provider: str, input_tokens: int, output_tokens: int) -> float:
-        if provider == 'openai-compatible':
+        if provider == "openai-compatible":
             return round((input_tokens * 0.0000005) + (output_tokens * 0.0000015), 6)
         return 0.0
 
-    def record(self, *, provider: str, model: str, started_at: float, prompt_text: str, response_text: str, success: bool) -> dict[str, Any]:
+    def record(
+        self,
+        *,
+        provider: str,
+        model: str,
+        started_at: float,
+        prompt_text: str,
+        response_text: str,
+        success: bool,
+    ) -> dict[str, Any]:
         latency_ms = int((time.time() - started_at) * 1000)
         input_tokens = self.estimate_tokens(prompt_text)
         output_tokens = self.estimate_tokens(response_text)
@@ -61,8 +70,8 @@ class LLMObservability:
             timestamp=time.time(),
         )
         payload = asdict(trace)
-        with self.log_path.open('a', encoding='utf-8') as f:
-            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
+        with self.log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
         return payload
 
 

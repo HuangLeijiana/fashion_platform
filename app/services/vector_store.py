@@ -75,7 +75,9 @@ def get_user_memory_collection(user_id: str):
 
 
 def index_knowledge_base(force: bool = False) -> int:
-    data_path = Path(__file__).resolve().parent.parent / "fashion_advisor" / "data" / "style_knowledge.json"
+    data_path = (
+        Path(__file__).resolve().parent.parent / "fashion_advisor" / "data" / "style_knowledge.json"
+    )
     if not data_path.exists():
         logger.warning("Knowledge base data not found: %s", data_path)
         return 0
@@ -88,7 +90,9 @@ def index_knowledge_base(force: bool = False) -> int:
         collection.delete(ids=collection.get().get("ids", []))
 
     existing_ids = set(collection.get().get("ids", [])) if collection.count() > 0 else set()
-    new_docs = documents if force else [d for d in documents if str(d.get("id", "")) not in existing_ids]
+    new_docs = (
+        documents if force else [d for d in documents if str(d.get("id", "")) not in existing_ids]
+    )
     if not new_docs:
         return collection.count()
 
@@ -233,7 +237,7 @@ def _normalize_results(results: dict[str, Any]) -> list[dict[str, Any]]:
     dists_list = results.get("distances", [[]])[0]
 
     output: list[dict[str, Any]] = []
-    for doc_id, doc, meta, dist in zip(ids_list, docs_list, metas_list, dists_list):
+    for doc_id, doc, meta, dist in zip(ids_list, docs_list, metas_list, dists_list, strict=False):
         tags_raw = meta.get("tags", "[]")
         try:
             tags = json.loads(tags_raw)

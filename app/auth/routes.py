@@ -3,21 +3,33 @@
 from __future__ import annotations
 
 import logging
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin, urlparse
 
 from flask import (
-    render_template, redirect, url_for, flash, request, jsonify, session,
     Response as FlaskResponse,
 )
-from flask_login import login_user, logout_user, current_user, login_required
+from flask import (
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_login import current_user, login_required, login_user, logout_user
 from flask_mail import Message
 
+from app.auth.forms import (
+    LoginForm,
+    ProfileForm,
+    RegistrationForm,
+    ResetPasswordForm,
+    ResetPasswordRequestForm,
+)
 from app.extensions import db, mail
 from app.models import User, UserProfile
-from app.auth.forms import (
-    LoginForm, RegistrationForm, ResetPasswordRequestForm,
-    ResetPasswordForm, ProfileForm,
-)
+
 from . import auth_bp
 
 logger = logging.getLogger(__name__)
@@ -27,10 +39,7 @@ def _is_safe_url(target: str | None) -> bool:
     """验证重定向 URL 是否安全（同源检查）。"""
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target or ""))
-    return (
-        test_url.scheme in ("http", "https")
-        and ref_url.netloc == test_url.netloc
-    )
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
 
 
 def _wants_json_response() -> bool:
@@ -41,8 +50,7 @@ def _wants_json_response() -> bool:
     best = request.accept_mimetypes.best_match(["application/json", "text/html"])
     return (
         best == "application/json"
-        and request.accept_mimetypes[best]
-        >= request.accept_mimetypes["text/html"]
+        and request.accept_mimetypes[best] >= request.accept_mimetypes["text/html"]
     )
 
 
@@ -103,11 +111,13 @@ def login() -> FlaskResponse:
 
         redirect_target = _get_post_login_target()
         if _wants_json_response():
-            return jsonify({
-                "success": True,
-                "message": "登录成功",
-                "redirect": redirect_target,
-            }), 200
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "登录成功",
+                    "redirect": redirect_target,
+                }
+            ), 200
         return redirect(redirect_target)
 
     return render_template("auth/login.html", title="登录", form=form)
@@ -182,14 +192,16 @@ def register() -> FlaskResponse:
             return _register_error(f"注册失败: {exc}", status_code=500)
 
         if request.is_json:
-            return jsonify({
-                "message": "注册成功",
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "username": user.username,
-                },
-            }), 201
+            return jsonify(
+                {
+                    "message": "注册成功",
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                    },
+                }
+            ), 201
 
         flash("注册成功，请登录", "success")
         return redirect(url_for("auth.login"))
@@ -204,9 +216,7 @@ def _register_error(message: str, status_code: int = 400) -> FlaskResponse:
         return jsonify({"error": message}), status_code
     flash(message, "error")
     form = RegistrationForm()
-    return render_template(
-        "auth/register.html", title="注册", form=form
-    ), status_code
+    return render_template("auth/register.html", title="注册", form=form), status_code
 
 
 # ===============================================================
@@ -230,9 +240,7 @@ def reset_password_request() -> FlaskResponse:
         flash("如果该邮箱已注册，重置密码的说明已发送到您的邮箱。", "info")
         return redirect(url_for("auth.login"))
 
-    return render_template(
-        "auth/reset_password_request.html", title="重置密码", form=form
-    )
+    return render_template("auth/reset_password_request.html", title="重置密码", form=form)
 
 
 @auth_bp.route("/reset_password/<token>", methods=["GET", "POST"])
@@ -252,9 +260,7 @@ def reset_password(token: str) -> FlaskResponse:
         flash("您的密码已更新，现在可以登录了。", "success")
         return redirect(url_for("auth.login"))
 
-    return render_template(
-        "auth/reset_password.html", title="设置新密码", form=form
-    )
+    return render_template("auth/reset_password.html", title="设置新密码", form=form)
 
 
 def send_password_reset_email(email: str, reset_url: str) -> None:
@@ -316,11 +322,13 @@ def profile() -> FlaskResponse:
 @login_required
 def get_current_user() -> FlaskResponse:
     """返回当前登录用户信息（JSON API）。"""
-    return jsonify({
-        "user": {
-            "id": current_user.id,
-            "email": current_user.email,
-            "username": current_user.username,
-            "permissions": [],
+    return jsonify(
+        {
+            "user": {
+                "id": current_user.id,
+                "email": current_user.email,
+                "username": current_user.username,
+                "permissions": [],
+            }
         }
-    })
+    )

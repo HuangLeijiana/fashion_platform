@@ -1,15 +1,16 @@
 """Fashion Advisor Agent 单元测试 — 覆盖核心工具方法和兜底逻辑。"""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.fashion_advisor.agent import (
-    OutfitAdvisorAgent,
     AgentContext,
+    OutfitAdvisorAgent,
     ToolResult,
 )
-from app.fashion_advisor.llm_client import AdvisorLLMClient
 from app.fashion_advisor.knowledge_base import FashionKnowledgeBase
+from app.fashion_advisor.llm_client import AdvisorLLMClient
 from app.fashion_advisor.prompts import build_style_plan_prompts
 
 
@@ -63,17 +64,30 @@ class TestOutfitAdvisorAgent:
             prefer_wardrobe=False,
         )
 
-        with patch.object(agent, "_tool_analyze_image") as mock_analyze, \
-             patch.object(agent, "_tool_fetch_weather") as mock_weather:
+        with (
+            patch.object(agent, "_tool_analyze_image") as mock_analyze,
+            patch.object(agent, "_tool_fetch_weather") as mock_weather,
+        ):
             mock_analyze.return_value = ToolResult(
-                "analyze_image", "completed", "done",
-                {"item_type": "衬衫", "dominant_color": "白色", "style_keywords": ["日常", "通勤"],
-                 "caption": "white shirt", "palette": "干净浅色", "material_hints": ["棉质"],
-                 "additional_tags": [], "summary": "test summary"}
+                "analyze_image",
+                "completed",
+                "done",
+                {
+                    "item_type": "衬衫",
+                    "dominant_color": "白色",
+                    "style_keywords": ["日常", "通勤"],
+                    "caption": "white shirt",
+                    "palette": "干净浅色",
+                    "material_hints": ["棉质"],
+                    "additional_tags": [],
+                    "summary": "test summary",
+                },
             )
             mock_weather.return_value = ToolResult(
-                "fetch_weather", "completed", "done",
-                {"weather": "晴朗", "temperature": 25, "summary": "天气适宜"}
+                "fetch_weather",
+                "completed",
+                "done",
+                {"weather": "晴朗", "temperature": 25, "summary": "天气适宜"},
             )
 
             result = agent._run_sequential(ctx)
@@ -93,6 +107,7 @@ class TestOutfitAdvisorAgent:
 
     def test_serialize_doc_preserves_keys(self, agent):
         from app.fashion_advisor.knowledge_base import RetrievedDocument
+
         doc = RetrievedDocument(
             document_id="doc-1",
             title="秋冬叠穿法则",
@@ -130,11 +145,23 @@ class TestOutfitAdvisorAgent:
     def test_normalize_payload_rejects_incomplete(self, agent):
         assert agent._normalize_payload(None) is None
         assert agent._normalize_payload({"summary": "hi"}) is None
-        assert agent._normalize_payload({"summary": "", "style_tags": [], "narrative": {},
-                                          "recommended_items": [], "retrieval_attributes": {},
-                                          "occasion_fit": "", "weather_fit": "",
-                                          "knowledge_references": [], "memory_references": [],
-                                          "follow_up_questions": []}) is None  # empty items
+        assert (
+            agent._normalize_payload(
+                {
+                    "summary": "",
+                    "style_tags": [],
+                    "narrative": {},
+                    "recommended_items": [],
+                    "retrieval_attributes": {},
+                    "occasion_fit": "",
+                    "weather_fit": "",
+                    "knowledge_references": [],
+                    "memory_references": [],
+                    "follow_up_questions": [],
+                }
+            )
+            is None
+        )  # empty items
 
 
 class TestBuildStylePlanPrompts:

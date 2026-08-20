@@ -1,8 +1,9 @@
 """共享图片处理工具 — 颜色提取、类型推断等，供多个模块复用。"""
 
 import logging
-import numpy as np
+
 import cv2
+import numpy as np
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -54,12 +55,15 @@ def extract_dominant_color(source, method="kmeans"):
             color_hsv = cv2.cvtColor(np.uint8([[color_rgb]]), cv2.COLOR_RGB2HSV)[0][0]
             h, s, v = color_hsv
 
-            is_background_white = (s < 20 and v > 230)
-            is_background_black = (v < 40)
+            is_background_white = s < 20 and v > 230
+            is_background_black = v < 40
 
-            if idx == sorted_indices[0] and len(sorted_indices) > 1:
-                if is_background_white or is_background_black:
-                    continue
+            if (
+                idx == sorted_indices[0]
+                and len(sorted_indices) > 1
+                and (is_background_white or is_background_black)
+            ):
+                continue
 
             return _classify_hsv(h, s, v)
 

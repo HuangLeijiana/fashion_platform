@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app import create_app
-from app.services.llm_observability import LLMObservability
+from app import create_app  # noqa: E402
+from app.services.llm_observability import LLMObservability  # noqa: E402
 
 
 @pytest.fixture
@@ -59,8 +59,17 @@ def test_fashion_advisor_stream_endpoint(client, monkeypatch):
                 "user_prompt": message,
                 "knowledge_context": [{"document_id": "k1", "title": "通勤配色", "score": 0.9}],
                 "memory_context": [],
-                "agent_trace": [{"step": "retrieve_knowledge", "status": "completed", "detail": "检索到 1 条知识。"}],
-                "workflow": {"engine": "sequential", "nodes": [{"key": "retrieve_knowledge", "label": "检索知识库"}]},
+                "agent_trace": [
+                    {
+                        "step": "retrieve_knowledge",
+                        "status": "completed",
+                        "detail": "检索到 1 条知识。",
+                    }
+                ],
+                "workflow": {
+                    "engine": "sequential",
+                    "nodes": [{"key": "retrieve_knowledge", "label": "检索知识库"}],
+                },
             }
 
     monkeypatch.setattr(advisor_views, "_service", lambda: FakeService())
@@ -113,6 +122,7 @@ def test_fashion_advice_returns_metrics(client, monkeypatch):
 
 def test_style_plan_stream_endpoint(client, monkeypatch):
     import io
+
     import app.fashion_advisor.views as advisor_views
 
     class FakeService:

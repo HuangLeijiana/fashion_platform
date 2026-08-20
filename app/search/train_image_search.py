@@ -1,24 +1,23 @@
 import os
-import sys
 
 # 修复zlibwapi.dll问题
 zlib_path = r"D:\Anaconda\envs\tensorflow\DLLs"
 if os.path.exists(zlib_path):
-    os.environ['PATH'] = zlib_path + os.pathsep + os.environ['PATH']
+    os.environ["PATH"] = zlib_path + os.pathsep + os.environ["PATH"]
     print(f"✅ 已添加DLL路径: {zlib_path}")
 else:
     print(f"❌ DLL路径不存在: {zlib_path}")
 
-# 现在导入tensorflow
-import tensorflow as tf
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
-from tensorflow.keras.preprocessing import image
-import numpy as np
-import pickle
-from pathlib import Path
-import json
-from datetime import datetime
+# 现在导入tensorflow（需在 PATH 修复后导入，E402 为有意为之）
+import pickle  # noqa: E402
+from datetime import datetime  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+import numpy as np  # noqa: E402
+import tensorflow as tf  # noqa: E402
+from tensorflow.keras.applications import MobileNetV2  # noqa: E402
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input  # noqa: E402
+from tensorflow.keras.preprocessing import image  # noqa: E402
 
 
 class ImageSearchTrainer:
@@ -43,7 +42,7 @@ class ImageSearchTrainer:
     def setup_gpu(self):
         """配置GPU设置"""
         # 检查是否有GPU可用
-        gpus = tf.config.experimental.list_physical_devices('GPU')
+        gpus = tf.config.experimental.list_physical_devices("GPU")
         if gpus:
             try:
                 # 设置GPU内存增长
@@ -66,9 +65,9 @@ class ImageSearchTrainer:
         print("🔄 加载MobileNetV2模型...")
         try:
             self.model = MobileNetV2(
-                weights='imagenet',
+                weights="imagenet",
                 include_top=False,  # 不包括顶层分类器
-                pooling='avg'  # 全局平均池化
+                pooling="avg",  # 全局平均池化
             )
             print("✅ 模型加载完成")
         except Exception as e:
@@ -91,10 +90,10 @@ class ImageSearchTrainer:
             img_array = np.expand_dims(img_array, axis=0)
             img_array = preprocess_input(img_array)
 
-            print(f"   🔄 提取特征...")
+            print("   🔄 提取特征...")
             # 提取特征
             features = self.model.predict(img_array, verbose=0)
-            print(f"   ✅ 特征提取完成")
+            print("   ✅ 特征提取完成")
             return features.flatten()
         except Exception as e:
             print(f"❌ 提取特征失败 {image_path}: {e}")
@@ -110,25 +109,27 @@ class ImageSearchTrainer:
 
             # 显示项目结构
             print("\n📂 项目结构:")
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            for root, dirs, files in os.walk(project_root):
-                level = root.replace(project_root, '').count(os.sep)
-                indent = ' ' * 2 * level
-                print(f'{indent}{os.path.basename(root)}/')
-                subindent = ' ' * 2 * (level + 1)
+            project_root = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
+            for root, _dirs, files in os.walk(project_root):
+                level = root.replace(project_root, "").count(os.sep)
+                indent = " " * 2 * level
+                print(f"{indent}{os.path.basename(root)}/")
+                subindent = " " * 2 * (level + 1)
                 for file in files[:5]:  # 只显示前5个文件
-                    if file.endswith(('.jpg', '.jpeg', '.png', '.py')):
-                        print(f'{subindent}{file}')
+                    if file.endswith((".jpg", ".jpeg", ".png", ".py")):
+                        print(f"{subindent}{file}")
                 if len(files) > 5:
-                    print(f'{subindent}... 还有 {len(files) - 5} 个文件')
+                    print(f"{subindent}... 还有 {len(files) - 5} 个文件")
 
             return []
 
         # 支持的图片格式
-        valid_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
+        valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
         image_files = []
 
-        for root, dirs, files in os.walk(self.image_dir):
+        for root, _dirs, files in os.walk(self.image_dir):
             for file in files:
                 if Path(file).suffix.lower() in valid_extensions:
                     full_path = os.path.join(root, file)
@@ -161,11 +162,11 @@ class ImageSearchTrainer:
             import numpy as np
 
             sample_images = [
-                ('red_shirt.jpg', (255, 0, 0), "红色衬衫"),
-                ('blue_jeans.jpg', (0, 0, 255), "蓝色牛仔裤"),
-                ('black_shoes.jpg', (0, 0, 0), "黑色鞋子"),
-                ('white_hat.jpg', (255, 255, 255), "白色帽子"),
-                ('green_bag.jpg', (0, 255, 0), "绿色背包")
+                ("red_shirt.jpg", (255, 0, 0), "红色衬衫"),
+                ("blue_jeans.jpg", (0, 0, 255), "蓝色牛仔裤"),
+                ("black_shoes.jpg", (0, 0, 0), "黑色鞋子"),
+                ("white_hat.jpg", (255, 255, 255), "白色帽子"),
+                ("green_bag.jpg", (0, 255, 0), "绿色背包"),
             ]
 
             for filename, color, description in sample_images:
@@ -174,7 +175,9 @@ class ImageSearchTrainer:
                 img = np.ones((300, 200, 3), dtype=np.uint8)
                 img[:, :] = color
                 # 添加文字
-                cv2.putText(img, description, (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+                cv2.putText(
+                    img, description, (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2
+                )
                 cv2.imwrite(img_path, img)
                 print(f"   ✅ 创建: {filename}")
 
@@ -205,21 +208,21 @@ class ImageSearchTrainer:
             features = self.extract_features(img_path)
             if features is not None:
                 # 使用相对于static目录的路径作为键
-                static_index = img_path.find('static' + os.sep)
+                static_index = img_path.find("static" + os.sep)
                 if static_index != -1:
                     relative_path = img_path[static_index:]
                 else:
                     relative_path = os.path.basename(img_path)
 
                 self.feature_dict[relative_path] = {
-                    'features': features,
-                    'filename': os.path.basename(img_path),
-                    'full_path': img_path
+                    "features": features,
+                    "filename": os.path.basename(img_path),
+                    "full_path": img_path,
                 }
                 successful_extractions += 1
-                print(f"   ✅ 成功提取特征")
+                print("   ✅ 成功提取特征")
             else:
-                print(f"   ❌ 特征提取失败")
+                print("   ❌ 特征提取失败")
 
         print(f"\n✅ 成功提取 {successful_extractions}/{len(image_files)} 张图片的特征")
 
@@ -238,13 +241,16 @@ class ImageSearchTrainer:
             os.makedirs(os.path.dirname(self.model_save_path), exist_ok=True)
 
             # 保存特征数据
-            with open(self.model_save_path, 'wb') as f:
-                pickle.dump({
-                    'feature_dict': self.feature_dict,
-                    'training_time': datetime.now().isoformat(),
-                    'total_images': len(self.feature_dict),
-                    'image_dir': self.image_dir
-                }, f)
+            with open(self.model_save_path, "wb") as f:
+                pickle.dump(
+                    {
+                        "feature_dict": self.feature_dict,
+                        "training_time": datetime.now().isoformat(),
+                        "total_images": len(self.feature_dict),
+                        "image_dir": self.image_dir,
+                    },
+                    f,
+                )
 
             print(f"💾 特征数据库已保存到: {self.model_save_path}")
             print(f"📊 包含 {len(self.feature_dict)} 张图片的特征")
@@ -256,9 +262,9 @@ class ImageSearchTrainer:
         """加载特征数据库"""
         try:
             if os.path.exists(self.model_save_path):
-                with open(self.model_save_path, 'rb') as f:
+                with open(self.model_save_path, "rb") as f:
                     data = pickle.load(f)
-                    self.feature_dict = data['feature_dict']
+                    self.feature_dict = data["feature_dict"]
                 print(f"✅ 加载特征数据库成功，包含 {len(self.feature_dict)} 张图片")
                 return True
             else:
@@ -276,9 +282,7 @@ def main():
     print("=" * 50)
 
     # 创建训练器实例 - 自动检测项目根目录
-    trainer = ImageSearchTrainer(
-        model_save_path="image_features.pkl"
-    )
+    trainer = ImageSearchTrainer(model_save_path="image_features.pkl")
 
     # 开始训练
     success = trainer.train()

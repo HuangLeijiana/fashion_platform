@@ -1,11 +1,11 @@
-﻿import uuid
 import json
-import secrets
 import logging
+import secrets
+import uuid
 from datetime import datetime, timedelta
 
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = db.Column(db.String(100), unique=True, nullable=False)
@@ -21,16 +21,21 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     profile = db.Column(db.JSON, nullable=False, default=dict)
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
-    updated_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(),
-                           onupdate=db.func.current_timestamp())
+    updated_at = db.Column(
+        db.TIMESTAMP,
+        server_default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp(),
+    )
     is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
 
     reset_token = db.Column(db.String(100), unique=True, nullable=True)
     reset_token_expiration = db.Column(db.DateTime, nullable=True)
 
-    user_profile = db.relationship('UserProfile', backref='user', uselist=False, cascade='all, delete-orphan')
-    clothes = db.relationship('UserClothes', backref='user', cascade='all, delete-orphan')
+    user_profile = db.relationship(
+        "UserProfile", backref="user", uselist=False, cascade="all, delete-orphan"
+    )
+    clothes = db.relationship("UserClothes", backref="user", cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -61,29 +66,34 @@ class User(UserMixin, db.Model):
 
 
 class UserProfile(db.Model):
-    __tablename__ = 'user_profiles'
+    __tablename__ = "user_profiles"
 
-    user_id = db.Column(db.CHAR(36), db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    user_id = db.Column(
+        db.CHAR(36), db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     username = db.Column(db.String(50), unique=True, nullable=False)
 
     body_shape = db.Column(db.String(50))
     skin_tone = db.Column(db.String(50))
-    style_pref = db.Column(db.Text, default='[]')
+    style_pref = db.Column(db.Text, default="[]")
     height = db.Column(db.Float)
     weight = db.Column(db.Float)
     age = db.Column(db.Integer)
     gender = db.Column(db.String(10))
 
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
-    updated_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(),
-                           onupdate=db.func.current_timestamp())
+    updated_at = db.Column(
+        db.TIMESTAMP,
+        server_default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp(),
+    )
 
 
 class UserClothes(db.Model):
-    __tablename__ = 'user_clothes'
+    __tablename__ = "user_clothes"
 
     cloth_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.CHAR(36), db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.CHAR(36), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     cloth_type = db.Column(db.String(50), nullable=False)
     feature_vector = db.Column(db.Text)
     color = db.Column(db.String(50))
@@ -92,13 +102,17 @@ class UserClothes(db.Model):
     image_url = db.Column(db.String(500))
 
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
-    updated_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(),
-                           onupdate=db.func.current_timestamp())
+    updated_at = db.Column(
+        db.TIMESTAMP,
+        server_default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp(),
+    )
 
 
 class ClothingItem(db.Model):
     """衣柜服装项 - SQLAlchemy ORM 模型，替代原有原生SQL操作"""
-    __tablename__ = 'clothing_items'
+
+    __tablename__ = "clothing_items"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.String(36), nullable=False, index=True)
@@ -115,40 +129,49 @@ class ClothingItem(db.Model):
     feature_vector = db.Column(db.Text)
     style_tags = db.Column(db.Text)
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
-    updated_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(),
-                           onupdate=db.func.current_timestamp())
+    updated_at = db.Column(
+        db.TIMESTAMP,
+        server_default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp(),
+    )
 
     @staticmethod
     def get_by_user(user_id):
-        return ClothingItem.query.filter_by(user_id=user_id).order_by(ClothingItem.created_at.desc()).all()
+        return (
+            ClothingItem.query.filter_by(user_id=user_id)
+            .order_by(ClothingItem.created_at.desc())
+            .all()
+        )
 
     def to_dict(self):
         import os as _os
+
         data = {
-            'id': self.id,
-            'user_id': self.user_id,
-            'name': self.name,
-            'category': self.category,
-            'subcategory': self.subcategory,
-            'color': self.color,
-            'brand': self.brand,
-            'season': self.season,
-            'occasion': self.occasion,
-            'material': self.material,
-            'image_path': self.image_path,
-            'style_tags': self.style_tags,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            "id": self.id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "category": self.category,
+            "subcategory": self.subcategory,
+            "color": self.color,
+            "brand": self.brand,
+            "season": self.season,
+            "occasion": self.occasion,
+            "material": self.material,
+            "image_path": self.image_path,
+            "style_tags": self.style_tags,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-        if data.get('image_path'):
-            base = _os.path.basename(data['image_path'].replace('\\', '/'))
-            data['image_path'] = f"uploads/{base}"
+        if data.get("image_path"):
+            base = _os.path.basename(data["image_path"].replace("\\", "/"))
+            data["image_path"] = f"uploads/{base}"
         return data
 
 
 class Product(db.Model):
     """商品模型 - 用于搜索模块"""
-    __tablename__ = 'products'
+
+    __tablename__ = "products"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
@@ -162,32 +185,32 @@ class Product(db.Model):
 
     def to_dict(self):
         data = {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'price': float(self.price) if self.price else 0.0,
-            'category': self.category,
-            'brand': self.brand,
-            'images': [],
-            'attributes': {},
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "price": float(self.price) if self.price else 0.0,
+            "category": self.category,
+            "brand": self.brand,
+            "images": [],
+            "attributes": {},
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if self.images:
             try:
                 imgs = json.loads(self.images)
                 for i, img_path in enumerate(imgs):
-                    if not img_path.startswith(('http', '/static')):
-                        imgs[i] = f'/static/images/products/{img_path}'
-                    elif img_path.startswith('/static/products/'):
-                        imgs[i] = img_path.replace('/static/products/', '/static/images/products/')
-                data['images'] = imgs
+                    if not img_path.startswith(("http", "/static")):
+                        imgs[i] = f"/static/images/products/{img_path}"
+                    elif img_path.startswith("/static/products/"):
+                        imgs[i] = img_path.replace("/static/products/", "/static/images/products/")
+                data["images"] = imgs
             except (json.JSONDecodeError, TypeError):
-                data['images'] = []
+                data["images"] = []
 
         if self.attributes:
             try:
-                data['attributes'] = json.loads(self.attributes)
+                data["attributes"] = json.loads(self.attributes)
             except (json.JSONDecodeError, TypeError):
-                data['attributes'] = {}
+                data["attributes"] = {}
 
         return data

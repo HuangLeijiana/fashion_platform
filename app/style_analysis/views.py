@@ -26,9 +26,9 @@ def analyze():
     if not allowed_file(image.filename):
         return jsonify({"error": "仅支持 png、jpg、jpeg、gif、webp 格式图片"}), 400
 
-    return jsonify({
-        "error": "风格分析模型尚未配置，请添加 app/style_analysis/style_model.pth 后重试"
-    })
+    return jsonify(
+        {"error": "风格分析模型尚未配置，请添加 app/style_analysis/style_model.pth 后重试"}
+    )
 
 
 @style_analysis_bp.route("/generate_profile", methods=["POST"])
@@ -43,31 +43,34 @@ def generate_profile():
 
     total = sum(style_counts.values())
     if total == 0:
-        return jsonify({
-            "success": True,
-            "data": {
-                "style_distribution": {},
-                "report": "当前衣柜暂无可用风格标签，添加带有风格标签的单品后可生成个人风格画像。",
-            },
-        })
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "style_distribution": {},
+                    "report": "当前衣柜暂无可用风格标签，添加带有风格标签的单品后可生成个人风格画像。",
+                },
+            }
+        )
 
     distribution = {
-        style: round(count / total * 100, 1)
-        for style, count in style_counts.most_common()
+        style: round(count / total * 100, 1) for style, count in style_counts.most_common()
     }
     dominant_style = style_counts.most_common(1)[0][0]
 
-    return jsonify({
-        "success": True,
-        "data": {
-            "style_distribution": distribution,
-            "report": (
-                f"系统分析了你衣柜中的 {len(items)} 件单品，"
-                f"当前主风格倾向为「{dominant_style}」。"
-                "该画像可用于后续推荐结果的个性化调整。"
-            ),
-        },
-    })
+    return jsonify(
+        {
+            "success": True,
+            "data": {
+                "style_distribution": distribution,
+                "report": (
+                    f"系统分析了你衣柜中的 {len(items)} 件单品，"
+                    f"当前主风格倾向为「{dominant_style}」。"
+                    "该画像可用于后续推荐结果的个性化调整。"
+                ),
+            },
+        }
+    )
 
 
 def _parse_style_tags(raw_tags):

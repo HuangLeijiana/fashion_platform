@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
-from flask import Blueprint, Response, jsonify, render_template, request, stream_with_context, url_for
+from flask import (
+    Blueprint,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    stream_with_context,
+    url_for,
+)
 from flask_login import current_user
 
 from app.fashion_advisor.prompts import build_chat_prompts
@@ -97,8 +104,14 @@ def chat_stream():
             system_prompt = context["system_prompt"]
             user_prompt = context["user_prompt"]
         else:  # pragma: no cover - compatibility fallback
-            memory_docs = service.knowledge_base.search_user_memory(user_id, message) if user_id else []
-            knowledge_docs = service.knowledge_base.search(message) if hasattr(service.knowledge_base, "search") else []
+            memory_docs = (
+                service.knowledge_base.search_user_memory(user_id, message) if user_id else []
+            )
+            knowledge_docs = (
+                service.knowledge_base.search(message)
+                if hasattr(service.knowledge_base, "search")
+                else []
+            )
             system_prompt, user_prompt = build_chat_prompts(message, memory_docs, knowledge_docs)
             context = {
                 "knowledge_context": [],
@@ -165,7 +178,8 @@ def generate_style_plan():
             weather=(request.form.get("weather") or "").strip(),
             temperature=(request.form.get("temperature") or "").strip(),
             notes=(request.form.get("notes") or "").strip(),
-            prefer_wardrobe=(request.form.get("prefer_wardrobe") or "true").lower() in {"1", "true", "on"},
+            prefer_wardrobe=(request.form.get("prefer_wardrobe") or "true").lower()
+            in {"1", "true", "on"},
             city=(request.form.get("city") or "").strip(),
         )
         return jsonify(result)
@@ -190,7 +204,8 @@ def generate_style_plan_stream():
             weather=(request.form.get("weather") or "").strip(),
             temperature=(request.form.get("temperature") or "").strip(),
             notes=(request.form.get("notes") or "").strip(),
-            prefer_wardrobe=(request.form.get("prefer_wardrobe") or "true").lower() in {"1", "true", "on"},
+            prefer_wardrobe=(request.form.get("prefer_wardrobe") or "true").lower()
+            in {"1", "true", "on"},
             city=(request.form.get("city") or "").strip(),
         ):
             yield format_sse(event["data"], event=event["event"])

@@ -1,6 +1,6 @@
 # app/auth/__init__.py
 from flask import Blueprint
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint("auth", __name__)
 
-from app.auth import routes
+from app.auth import routes  # noqa: E402  # 注册路由到 auth_bp（循环导入规避）

@@ -1,7 +1,7 @@
 """天气模块：获取天气数据并生成穿搭建议。"""
 
-import os
 import logging
+import os
 
 import requests
 from flask import current_app
@@ -9,9 +9,7 @@ from flask import current_app
 logger = logging.getLogger(__name__)
 
 
-def get_weather(
-    city_name: str | None = None, ip: str | None = None
-) -> tuple[str, float, str]:
+def get_weather(city_name: str | None = None, ip: str | None = None) -> tuple[str, float, str]:
     """获取指定城市（或通过IP推断）的实时天气。
 
     Returns:
@@ -24,9 +22,7 @@ def get_weather(
             city_name = city_resp.get("city", "北京")
 
         api_url = "http://apis.juhe.cn/simpleWeather/query"
-        api_key = current_app.config.get("WEATHER_API_KEY") or os.environ.get(
-            "WEATHER_API_KEY", ""
-        )
+        api_key = current_app.config.get("WEATHER_API_KEY") or os.environ.get("WEATHER_API_KEY", "")
         params = {"key": api_key, "city": city_name}
         weather_resp = requests.get(api_url, params=params, timeout=6).json()
 
@@ -42,9 +38,7 @@ def get_weather(
         return city_name or "未知城市", 20, "晴朗"
 
 
-def get_weather_outfit_suggestion(
-    temp: float, condition: str, cloth_type: str
-) -> str:
+def get_weather_outfit_suggestion(temp: float, condition: str, cloth_type: str) -> str:
     """根据气温、天气状况和衣物类型生成纯中文穿搭建议。
 
     Args:

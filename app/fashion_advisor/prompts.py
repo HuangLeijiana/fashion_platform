@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from app.fashion_advisor.knowledge_base import RetrievedDocument
-
 
 STYLE_PLAN_SCHEMA_DESCRIPTION = """
 请严格返回 JSON，不要输出 Markdown，不要附加解释。JSON 结构必须包含：

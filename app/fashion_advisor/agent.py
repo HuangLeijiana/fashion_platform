@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-import numpy as np
 from PIL import Image
 
 from app.fashion_advisor.knowledge_base import FashionKnowledgeBase, RetrievedDocument
@@ -325,9 +325,19 @@ class OutfitAdvisorAgent:
         except Exception:
             dominant_color = color_hint or "未知"
 
-        item_type = category_hint if category_hint and category_hint != "未分类" else self._infer_item_type(caption, image_path)
-        style_keywords = self._build_style_keywords(style_hint, caption, dominant_color, item_type, additional_tags)
-        material_hints = [material_hint] if material_hint and material_hint != "未知材质" else self._infer_material_hints(caption)
+        item_type = (
+            category_hint
+            if category_hint and category_hint != "未分类"
+            else self._infer_item_type(caption, image_path)
+        )
+        style_keywords = self._build_style_keywords(
+            style_hint, caption, dominant_color, item_type, additional_tags
+        )
+        material_hints = (
+            [material_hint]
+            if material_hint and material_hint != "未知材质"
+            else self._infer_material_hints(caption)
+        )
         palette = self._describe_palette(dominant_color)
         primary_style = style_keywords[0] if style_keywords else "日常"
         secondary_style = style_keywords[1] if len(style_keywords) > 1 else primary_style
@@ -362,17 +372,23 @@ class OutfitAdvisorAgent:
                 "weather": user_weather,
                 "temperature_text": f"{user_temp}°C" if user_temp else "未提供",
                 "temperature": numeric,
-                "summary": weather_service.get_suggestion_for_temp(numeric) if numeric is not None else "已使用用户提供的天气信息。",
+                "summary": weather_service.get_suggestion_for_temp(numeric)
+                if numeric is not None
+                else "已使用用户提供的天气信息。",
                 "source": "user_input",
                 "city": context.city or "",
             }
-            return ToolResult("fetch_weather", "completed", "使用用户提供的天气信息。", weather_data)
+            return ToolResult(
+                "fetch_weather", "completed", "使用用户提供的天气信息。", weather_data
+            )
 
         try:
-            result = weather_service.get_weather(city_name=context.city or None, ip=context.client_ip or None)
+            result = weather_service.get_weather(
+                city_name=context.city or None, ip=context.client_ip or None
+            )
             weather_data = {
                 "weather": result["condition"],
-                "temperature_text": f'{result["temperature"]}°C',
+                "temperature_text": f"{result['temperature']}°C",
                 "temperature": result["temperature"],
                 "city": result["city"],
                 "humidity": result.get("humidity", ""),
@@ -380,7 +396,9 @@ class OutfitAdvisorAgent:
                 "summary": result["suggestion"],
                 "source": "auto_query",
             }
-            detail = f'已自动获取天气：{result["city"]} {result["condition"]} {result["temperature"]}°C'
+            detail = (
+                f"已自动获取天气：{result['city']} {result['condition']} {result['temperature']}°C"
+            )
             return ToolResult("fetch_weather", "completed", detail, weather_data)
         except Exception as exc:
             logger.warning("weather lookup failed: %s", exc)
@@ -392,17 +410,23 @@ class OutfitAdvisorAgent:
                 "source": "fallback",
                 "city": context.city or "",
             }
-            return ToolResult("fetch_weather", "fallback", "天气查询失败，已切换为兜底建议。", weather_data)
+            return ToolResult(
+                "fetch_weather", "fallback", "天气查询失败，已切换为兜底建议。", weather_data
+            )
 
     def _tool_retrieve_knowledge(self, query: str) -> ToolResult:
         docs = self.knowledge_base.search(query)
-        return ToolResult("retrieve_knowledge", "completed", f"检索到 {len(docs)} 条穿搭知识。", {"docs": docs})
+        return ToolResult(
+            "retrieve_knowledge", "completed", f"检索到 {len(docs)} 条穿搭知识。", {"docs": docs}
+        )
 
     def _tool_retrieve_memory(self, context: AgentContext, query: str) -> ToolResult:
         if not context.prefer_wardrobe or not context.user_id:
             return ToolResult("retrieve_memory", "skipped", "未启用用户衣橱记忆。", {"docs": []})
         docs = self.knowledge_base.search_user_memory(context.user_id, query)
-        return ToolResult("retrieve_memory", "completed", f"检索到 {len(docs)} 条用户记忆。", {"docs": docs})
+        return ToolResult(
+            "retrieve_memory", "completed", f"检索到 {len(docs)} 条用户记忆。", {"docs": docs}
+        )
 
     def _tool_generate_plan(
         self,
@@ -433,7 +457,9 @@ class OutfitAdvisorAgent:
             weather_context=weather_context,
             context=context,
         )
-        return ToolResult("generate_plan", "fallback", "未拿到有效的 LLM 输出，已切换到规则兜底方案。", fallback)
+        return ToolResult(
+            "generate_plan", "fallback", "未拿到有效的 LLM 输出，已切换到规则兜底方案。", fallback
+        )
 
     # ------------------------------------------------------------------
     # Helpers
@@ -595,7 +621,11 @@ class OutfitAdvisorAgent:
             },
             "recommended_items": recommended_items,
             "retrieval_attributes": {
-                "must_have": [f"{dominant_color}协调配色", style_tags[0], recommended_items[0]["keywords"][0]],
+                "must_have": [
+                    f"{dominant_color}协调配色",
+                    style_tags[0],
+                    recommended_items[0]["keywords"][0],
+                ],
                 "nice_to_have": ["利落版型", "低饱和配色", weather_context.get("weather", "")],
                 "avoid": ["高冲突配色", "过度堆叠装饰"],
             },
@@ -606,8 +636,7 @@ class OutfitAdvisorAgent:
                 for doc in knowledge_docs
             ],
             "memory_references": [
-                {"title": doc.title, "reason": "用于贴合用户已有衣橱与偏好"}
-                for doc in memory_docs
+                {"title": doc.title, "reason": "用于贴合用户已有衣橱与偏好"} for doc in memory_docs
             ],
             "follow_up_questions": [
                 "你更想把这套搭配用于通勤、约会还是休闲出行？",
@@ -739,7 +768,9 @@ class OutfitAdvisorAgent:
         recommended_items = payload.get("recommended_items", [])
         if not isinstance(recommended_items, list) or not recommended_items:
             return None
-        payload["style_tags"] = [str(item) for item in payload.get("style_tags", []) if str(item).strip()][:3]
+        payload["style_tags"] = [
+            str(item) for item in payload.get("style_tags", []) if str(item).strip()
+        ][:3]
         payload["knowledge_references"] = payload.get("knowledge_references") or []
         payload["memory_references"] = payload.get("memory_references") or []
         payload["follow_up_questions"] = payload.get("follow_up_questions") or []
@@ -797,7 +828,11 @@ class OutfitAdvisorAgent:
             "丝质": ["silk", "satin"],
             "西装面料": ["tailored", "blazer", "suiting"],
         }
-        hints = [label for label, keywords in mapping.items() if any(keyword in text for keyword in keywords)]
+        hints = [
+            label
+            for label, keywords in mapping.items()
+            if any(keyword in text for keyword in keywords)
+        ]
         return hints or ["基础面料"]
 
     @staticmethod

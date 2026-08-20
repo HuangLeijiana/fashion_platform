@@ -38,17 +38,14 @@ def build_recommend_reason(
 
     # 3. 气温与天气场景的说明
     if city and weather_suggestion:
-        parts.append(
-            f"考虑到当前{city}{condition}、气温约 {int(temp)}℃，{weather_suggestion}"
-        )
+        parts.append(f"考虑到当前{city}{condition}、气温约 {int(temp)}℃，{weather_suggestion}")
     elif weather_suggestion:
         parts.append(weather_suggestion)
 
     # 4. 轻微点题
     if "中式" in style_tag or "旗袍" in desc:
         parts.append(
-            "整体偏中式风格，既有仪式感，又不会过于张扬，"
-            "适合作为日常与稍正式场合之间的过渡搭配。"
+            "整体偏中式风格，既有仪式感，又不会过于张扬，适合作为日常与稍正式场合之间的过渡搭配。"
         )
 
     return " ".join(p.strip() for p in parts if p and p.strip())
@@ -82,12 +79,10 @@ def _add_profile_reason(
         "苹果型": "上半身容易显得饱满，这类单品在肩线和整体线条上相对干净，有助于弱化上半身体积感。",
         "沙漏形": "沙漏型身材腰线优势明显，这类单品可以把腰线自然强调出来，整体更有曲线感。",
         "沙漏型": "沙漏型身材腰线优势明显，这类单品可以把腰线自然强调出来，整体更有曲线感。",
-        "矩形": '矩形身材直线感较强，这类单品在轮廓和细节上增加了一点层次感，能让整体不那么“直上直下”。',
-        "H型": '矩形身材直线感较强，这类单品在轮廓和细节上增加了一点层次感，能让整体不那么“直上直下”。',
+        "矩形": "矩形身材直线感较强，这类单品在轮廓和细节上增加了一点层次感，能让整体不那么“直上直下”。",
+        "H型": "矩形身材直线感较强，这类单品在轮廓和细节上增加了一点层次感，能让整体不那么“直上直下”。",
     }
-    body_reason = body_shape_reasons.get(
-        profile.body_shape, ""
-    ) if profile.body_shape else ""
+    body_reason = body_shape_reasons.get(profile.body_shape, "") if profile.body_shape else ""
 
     # 肤色与颜色协同
     color_reason = ""
@@ -118,8 +113,7 @@ def _add_profile_reason(
         hit = [s for s in preferred if s and s in style_tag]
         if hit:
             parts.append(
-                f"这件单品在风格上贴近您标记的「{'、'.join(hit)}」偏好，"
-                "穿上会更符合您一贯的审美。"
+                f"这件单品在风格上贴近您标记的「{'、'.join(hit)}」偏好，穿上会更符合您一贯的审美。"
             )
         else:
             parts.append(

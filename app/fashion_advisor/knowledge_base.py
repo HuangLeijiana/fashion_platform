@@ -29,7 +29,9 @@ class FashionKnowledgeBase:
         self.top_k = top_k
         self._documents = self._load_documents()
         self._vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=3000)
-        self._matrix = self._vectorizer.fit_transform([self._build_text(doc) for doc in self._documents])
+        self._matrix = self._vectorizer.fit_transform(
+            [self._build_text(doc) for doc in self._documents]
+        )
 
     def search(self, query: str, top_k: int | None = None) -> list[RetrievedDocument]:
         if not query.strip():
@@ -52,7 +54,9 @@ class FashionKnowledgeBase:
                 pass
         return self._search_tfidf(query, top_k)
 
-    def search_user_memory(self, user_id: str | None, query: str, top_k: int | None = None) -> list[RetrievedDocument]:
+    def search_user_memory(
+        self, user_id: str | None, query: str, top_k: int | None = None
+    ) -> list[RetrievedDocument]:
         if not user_id or not query.strip():
             return []
 
@@ -79,7 +83,9 @@ class FashionKnowledgeBase:
         retriever = LangChainKnowledgeRetriever(collection_name="fashion_knowledge")
         return retriever.search(query, top_k=top_k or self.top_k)
 
-    def _search_user_memory_langchain(self, user_id: str, query: str, top_k: int | None = None) -> list[RetrievedDocument]:
+    def _search_user_memory_langchain(
+        self, user_id: str, query: str, top_k: int | None = None
+    ) -> list[RetrievedDocument]:
         from app.fashion_advisor.langchain_retriever import LangChainKnowledgeRetriever
         from app.services.vector_store import index_user_wardrobe
 
@@ -93,7 +99,9 @@ class FashionKnowledgeBase:
         results = search_knowledge(query, top_k=top_k or self.top_k)
         return [self._from_mapping(item) for item in results]
 
-    def _search_user_memory_vector(self, user_id: str, query: str, top_k: int | None = None) -> list[RetrievedDocument]:
+    def _search_user_memory_vector(
+        self, user_id: str, query: str, top_k: int | None = None
+    ) -> list[RetrievedDocument]:
         from app.services.vector_store import search_user_memory
 
         results = search_user_memory(user_id, query, top_k=top_k or self.top_k)
@@ -110,7 +118,9 @@ class FashionKnowledgeBase:
             if score > 0
         ]
 
-    def _search_user_memory_tfidf(self, user_id: str, query: str, top_k: int | None = None) -> list[RetrievedDocument]:
+    def _search_user_memory_tfidf(
+        self, user_id: str, query: str, top_k: int | None = None
+    ) -> list[RetrievedDocument]:
         documents = self._build_user_memory_documents(user_id)
         if not documents:
             return []
@@ -119,7 +129,9 @@ class FashionKnowledgeBase:
         matrix = vectorizer.fit_transform([self._build_text(doc) for doc in documents])
         query_vector = vectorizer.transform([query])
         scores = cosine_similarity(query_vector, matrix)[0]
-        ranked = sorted(enumerate(scores), key=lambda item: item[1], reverse=True)[: (top_k or self.top_k)]
+        ranked = sorted(enumerate(scores), key=lambda item: item[1], reverse=True)[
+            : (top_k or self.top_k)
+        ]
         return [
             self._to_retrieved_document(documents[index], float(score))
             for index, score in ranked

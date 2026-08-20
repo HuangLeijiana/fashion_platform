@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Callable, Generator
 from queue import Queue
 from threading import Thread
-from typing import Any, Callable, Generator
+from typing import Any
 
 from flask import current_app, has_app_context, request
 
@@ -27,7 +28,9 @@ class FashionAdvisorService:
 
     def health_check(self) -> dict[str, Any]:
         llm_status = self.llm_client.health()
-        advisor_bundle = os.path.join(current_app.static_folder or "", "advisor-app", "fashion-advisor-app.js")
+        advisor_bundle = os.path.join(
+            current_app.static_folder or "", "advisor-app", "fashion-advisor-app.js"
+        )
         return {
             "status": "success",
             "service": "fashion_advisor",
@@ -78,9 +81,7 @@ class FashionAdvisorService:
         memory_docs = self.knowledge_base.search_user_memory(user_id, message) if user_id else []
         memory_status = "completed" if user_id else "skipped"
         memory_detail = (
-            f"检索到 {len(memory_docs)} 条衣橱记忆。"
-            if user_id
-            else "当前未登录，未启用衣橱记忆。"
+            f"检索到 {len(memory_docs)} 条衣橱记忆。" if user_id else "当前未登录，未启用衣橱记忆。"
         )
         trace.append({"step": "retrieve_memory", "status": memory_status, "detail": memory_detail})
         self._emit_progress(
@@ -133,7 +134,9 @@ class FashionAdvisorService:
             model = result.model
             metrics = result.metadata or {}
         else:
-            response_text = self._build_fallback_chat_reply(message, context["memory_docs"], context["knowledge_docs"])
+            response_text = self._build_fallback_chat_reply(
+                message, context["memory_docs"], context["knowledge_docs"]
+            )
             provider = "fallback"
             model = "rule-based"
             metrics = {}
@@ -284,19 +287,33 @@ class FashionAdvisorService:
             style_distribution[style] = style_distribution.get(style, 0) + 1
 
         diagnosis: list[str] = []
-        if category_distribution.get("裤装", 0) + category_distribution.get("牛仔裤", 0) + category_distribution.get("半裙", 0) < 2:
+        if (
+            category_distribution.get("裤装", 0)
+            + category_distribution.get("牛仔裤", 0)
+            + category_distribution.get("半裙", 0)
+            < 2
+        ):
             diagnosis.append("下装偏少，建议补一条深色长裤和一条更轻松的日常下装。")
         if color_distribution.get("白色", 0) < 1:
             diagnosis.append("缺少白色基础款，建议补一件白色内搭或衬衫，提升搭配灵活性。")
-        if category_distribution.get("外套", 0) < 1 and category_distribution.get("西装上衣", 0) < 1:
+        if (
+            category_distribution.get("外套", 0) < 1
+            and category_distribution.get("西装上衣", 0) < 1
+        ):
             diagnosis.append("外搭层偏少，建议补一件轻薄外套或针织开衫，增强天气适配能力。")
         if len(style_distribution) <= 2:
             diagnosis.append("当前风格集中度较高，可以加入一些不同场景的单品，让衣橱更有变化。")
         if not diagnosis:
             diagnosis.append("衣橱结构比较均衡，基础款与风格款之间的搭配空间不错。")
 
-        tops = [item for item in items if (item.category or "") in {"上装", "衬衫", "T恤", "针织上衣", "外套", "西装上衣"}]
-        bottoms = [item for item in items if (item.category or "") in {"裤装", "牛仔裤", "半裙", "裙装"}]
+        tops = [
+            item
+            for item in items
+            if (item.category or "") in {"上装", "衬衫", "T恤", "针织上衣", "外套", "西装上衣"}
+        ]
+        bottoms = [
+            item for item in items if (item.category or "") in {"裤装", "牛仔裤", "半裙", "裙装"}
+        ]
 
         outfit_recommendations: list[dict[str, Any]] = []
         for top in tops[:3]:
@@ -311,9 +328,23 @@ class FashionAdvisorService:
 
         purchase_advice: list[dict[str, str]] = []
         if color_distribution.get("黑色", 0) < 1:
-            purchase_advice.append({"type": "基础款下装", "color": "黑色", "season": "四季", "reason": "黑色下装最容易承接多种上装。"})
+            purchase_advice.append(
+                {
+                    "type": "基础款下装",
+                    "color": "黑色",
+                    "season": "四季",
+                    "reason": "黑色下装最容易承接多种上装。",
+                }
+            )
         if category_distribution.get("鞋履", 0) < 1:
-            purchase_advice.append({"type": "鞋履", "color": "白色或黑色", "season": "四季", "reason": "一双简洁鞋履能显著提升搭配完成度。"})
+            purchase_advice.append(
+                {
+                    "type": "鞋履",
+                    "color": "白色或黑色",
+                    "season": "四季",
+                    "reason": "一双简洁鞋履能显著提升搭配完成度。",
+                }
+            )
 
         return {
             "success": True,

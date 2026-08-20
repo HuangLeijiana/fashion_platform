@@ -1,4 +1,4 @@
-# 云裳衣裳 — AI 时尚推荐平台
+# 云想衣裳 — AI 时尚推荐平台
 
 基于深度学习的智能时尚穿搭推荐系统，支持图片上传、AI 风格分析、天气感知推荐、知识库 RAG 和衣橱管理。
 
@@ -141,6 +141,22 @@ docker compose up -d
 ```bash
 pytest tests/ -v
 ```
+
+## 检索评测（可复现）
+
+CLIP 图像检索质量由 `eval/` 下的脚本量化，指标可一键复现：
+
+```bash
+# 依赖：pip install -r requirements.txt（含 torch、clip、Pillow、numpy）
+python eval/eval_clip_retrieval.py
+```
+
+脚本对 `static/images/products/` 下 41 件商品图做两套检索评估：
+
+1. **库内自检**：每张商品图作为查询在完整商品库中检索，验证 CLIP 特征与向量管线的一致性；
+2. **13 类扰动鲁棒检索**：对每张图施加 JPEG 压缩、缩放、模糊、亮度、翻转、裁剪、旋转、饱和度等 13 类扰动后作为查询，模拟"用户实拍 ≠ 库图"的检索差距。
+
+结果写入 `eval/retrieval_results.json`（当前结果：扰动查询 recall@1≥95%、recall@5=100%）。
 
 ## License
 

@@ -1,0 +1,78 @@
+{
+  "n_products": 41,
+  "feature_dim": 512,
+  "model": "CLIP ViT-B/32",
+  "top_k": 5,
+  "self_check": {
+    "recall@1": 1.0,
+    "recall@5": 1.0,
+    "mean_self_sim": 1.0
+  },
+  "perturbations": {
+    "jpeg30": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9523
+    },
+    "resize50": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9951
+    },
+    "blur2": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9672
+    },
+    "bright70": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9688
+    },
+    "bright130": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9532
+    },
+    "flip": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9743
+    },
+    "jpeg10": {
+      "recall@1": 0.9756,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9188
+    },
+    "resize25": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9735
+    },
+    "blur5": {
+      "recall@1": 0.9512,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.888
+    },
+    "crop70": {
+      "recall@1": 0.9756,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9145
+    },
+    "rot15": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9404
+    },
+    "sat150": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9893
+    },
+    "combo": {
+      "recall@1": 0.9756,
+      "recall@5": 1.0,
+      "mean_top1_sim": 0.9293
+    }
+  }
+}

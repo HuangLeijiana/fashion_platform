@@ -21,6 +21,9 @@ def test_weather_feature_flag(client):
 
 def test_wardrobe_recommendation_flag(client, tmp_path):
     client.application.config["FEATURE_WARDROBE_RECOMMENDATION"] = False
+    # /recommendation/ai_recommend 需要登录态，先用默认管理员登录
+    rv_login = client.post("/auth/login", data={"username": "admin", "password": "admin123"})
+    assert rv_login.status_code in (200, 302)
     # Prepare a fake image path
     img = tmp_path / "x.jpg"
     img.write_bytes(b"\xff\xd8\xff")

@@ -36,6 +36,9 @@ def test_upload_and_recommend_flow(client):
     j = rv.get_json()
     assert j["success"] is True
     local_path = j["local_path"]
+    # /recommendation/ai_recommend 需要登录态，先用默认管理员登录
+    rv_login = client.post("/auth/login", data={"username": "admin", "password": "admin123"})
+    assert rv_login.status_code in (200, 302)
     # Recommend
     rv2 = client.post(
         "/recommendation/ai_recommend",

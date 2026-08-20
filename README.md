@@ -1,5 +1,7 @@
 # 云想衣裳 — AI 时尚推荐平台
 
+[![CI](https://github.com/HuangLeijiana/fashion_platform/actions/workflows/ci.yml/badge.svg)](https://github.com/HuangLeijiana/fashion_platform/actions/workflows/ci.yml)
+
 基于深度学习的智能时尚穿搭推荐系统，支持图片上传、AI 风格分析、天气感知推荐、知识库 RAG 和衣橱管理。
 
 ## 技术栈

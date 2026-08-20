@@ -9,7 +9,7 @@ from app import create_app
 @pytest.fixture
 def client():
     app = create_app()
-    app.config.update(TESTING=True)
+    app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
     return app.test_client()
 
 
@@ -36,9 +36,9 @@ def test_upload_and_recommend_flow(client):
     j = rv.get_json()
     assert j["success"] is True
     local_path = j["local_path"]
-    # /recommendation/ai_recommend 需要登录态，先用默认管理员登录
+    # /recommendation/ai_recommend 需要登录态，先用默认管理员登录（成功为 302 重定向）
     rv_login = client.post("/auth/login", data={"username": "admin", "password": "admin123"})
-    assert rv_login.status_code in (200, 302)
+    assert rv_login.status_code == 302
     # Recommend
     rv2 = client.post(
         "/recommendation/ai_recommend",

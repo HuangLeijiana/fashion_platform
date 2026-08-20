@@ -6,7 +6,7 @@ from app import create_app
 @pytest.fixture
 def client():
     app = create_app()
-    app.config.update(TESTING=True)
+    app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
     return app.test_client()
 
 
@@ -21,9 +21,9 @@ def test_weather_feature_flag(client):
 
 def test_wardrobe_recommendation_flag(client, tmp_path):
     client.application.config["FEATURE_WARDROBE_RECOMMENDATION"] = False
-    # /recommendation/ai_recommend 需要登录态，先用默认管理员登录
+    # /recommendation/ai_recommend 需要登录态，先用默认管理员登录（成功为 302 重定向）
     rv_login = client.post("/auth/login", data={"username": "admin", "password": "admin123"})
-    assert rv_login.status_code in (200, 302)
+    assert rv_login.status_code == 302
     # Prepare a fake image path
     img = tmp_path / "x.jpg"
     img.write_bytes(b"\xff\xd8\xff")

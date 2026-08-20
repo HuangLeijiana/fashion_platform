@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Generator
 
 import requests
-from flask import current_app
+from flask import current_app, has_app_context
 
 from app.services.llm_observability import llm_observability
 
@@ -24,11 +24,12 @@ class AdvisorLLMClient:
     """Lightweight LLM client for the fashion advisor."""
 
     def __init__(self) -> None:
-        self.provider = current_app.config.get("ADVISOR_LLM_PROVIDER", "auto")
-        self.model = current_app.config.get("ADVISOR_LLM_MODEL", "qwen2.5:3b")
-        self.ollama_host = current_app.config.get("ADVISOR_OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-        self.openai_api_key = current_app.config.get("ADVISOR_OPENAI_API_KEY", "")
-        self.openai_base_url = current_app.config.get("ADVISOR_OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+        config = current_app.config if has_app_context() else {}
+        self.provider = config.get("ADVISOR_LLM_PROVIDER", "auto")
+        self.model = config.get("ADVISOR_LLM_MODEL", "qwen2.5:3b")
+        self.ollama_host = config.get("ADVISOR_OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+        self.openai_api_key = config.get("ADVISOR_OPENAI_API_KEY", "")
+        self.openai_base_url = config.get("ADVISOR_OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 
     def health(self) -> dict[str, Any]:
         provider = self._select_provider()

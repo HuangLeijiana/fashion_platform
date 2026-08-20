@@ -28,7 +28,10 @@ def create_app(config_class=None):
 
     from .extensions import db, login_manager, mail
     from . import models  # noqa: F401
-    from flasgger import Swagger
+    try:
+        from flasgger import Swagger
+    except ImportError:
+        Swagger = None
 
     db.init_app(app)
     mail.init_app(app)
@@ -46,7 +49,8 @@ def create_app(config_class=None):
         'swagger_ui': True,
         'specs_route': '/api/docs/',
     }
-    Swagger(app, template_file='../docs/openapi.yml', config=swagger_config)
+    if Swagger is not None:
+        Swagger(app, template_file='../docs/openapi.yml', config=swagger_config)
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'

@@ -34,7 +34,8 @@ package-lock.json
 *.bin
 app/models/
 app/checkpoints/
-app/style_analysis/
+app/style_analysis/*.pth
+app/style_analysis/*.bin
 
 # Duplicate image directories (consolidated into static/images/products/)
 clothes/

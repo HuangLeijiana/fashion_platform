@@ -6,7 +6,7 @@ from queue import Queue
 from threading import Thread
 from typing import Any, Callable, Generator
 
-from flask import current_app, request
+from flask import current_app, has_app_context, request
 
 from app.fashion_advisor.agent import AgentContext, OutfitAdvisorAgent
 from app.fashion_advisor.knowledge_base import FashionKnowledgeBase, RetrievedDocument
@@ -20,7 +20,8 @@ class FashionAdvisorService:
 
     def __init__(self) -> None:
         self.llm_client = AdvisorLLMClient()
-        top_k = current_app.config.get("ADVISOR_VECTOR_TOP_K", 3)
+        config = current_app.config if has_app_context() else {}
+        top_k = config.get("ADVISOR_VECTOR_TOP_K", 3)
         self.knowledge_base = FashionKnowledgeBase(top_k=top_k)
         self.agent = OutfitAdvisorAgent(self.llm_client, self.knowledge_base)
 
